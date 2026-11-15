@@ -147,42 +147,8 @@ const amazonSearch = (q) => `https://www.amazon.com/s?k=${encodeURIComponent(q).
 const ali = (q) => `https://www.aliexpress.com/w/wholesale-${q.trim().split(/\s+/).map(encodeURIComponent).join("-")}.html`;
 const m = (mm) => (mm / 1000).toFixed(2) + " m";
 
-// Amazon picks + notes from v2/bom/make_bom_v2.py (ASINs found 2026-11-13). cost(s) = this part's share for one ring.
-const PARTS = [
-  { name: "Clear TPU filament", pick: "3DHoJor TPU 95A, 1.75 mm, 1 kg, Clear", asin: "B0DF2VLNPN", pack: "1 kg spool", price: 13.99,
-    qty: (s) => `${s.grams} g`, cost: (s) => (s.grams * 1.1 / 1000) * 13.99, ali: "clear TPU filament 1.75mm",
-    note: "Pick Clear, not the tinted colours. Usually $18–20 ($13.99 on sale). Our print profile is tuned for CC3D TPU 72D." },
-  { name: "WS2812B LED strip", pick: "BTF-LIGHTING WS2812B ECO, 60 LED/m, IP30, black PCB, 5 m", asin: "B088BPGMXB", pack: "5 m reel", price: 13.99,
-    qty: (s) => `${s.leds} LEDs · ${m(s.strip_mm)}`, cost: (s) => (s.strip_mm / 5000) * 13.99, ali: "WS2812B 60 LED IP30 5m black PCB",
-    note: "Choose ECO, IP30, 60/m (about $14, not the $30 Pure Gold variant). Not IP65/IP67: the tunnel is 13 × 4 mm. 10 mm wide, 12 mm max." },
-  { name: "ESP32-C3 SuperMini", pick: "Teyleten Robot ESP32-C3 SuperMini, 3 pcs", asin: "B0D47G24W3", pack: "3 pcs", price: 12.99,
-    qty: () => "1", cost: () => 12.99 / 3, ali: "ESP32 C3 SuperMini", note: "The plain SuperMini, not the OLED or expansion-board versions." },
-  { name: "USB-C charger + 5 V boost", pick: "Teyleten Robot IP5310 5 V 3.1 A boost / Type-C charge module, 5 pcs", asin: "B0GCVVL4V8", pack: "5 pcs", price: 9.99,
-    qty: () => "1", cost: () => 9.99 / 5, ali: "IP5310 Type C 5V 3.1A boost charging module",
-    note: "Check the photos show a KEY pad and 5V OUT pads.", alt: { asin: "B0BYMC7XBZ", label: "Fallback: ATNSINC IP5310" } },
-  { name: "18650 Li-ion cell", pick: "Samsung 25R 2500 mAh flat top, 4-pack", asin: "B0BSLT62K6", pack: "4 cells", price: 46.49,
-    qty: () => "1", cost: () => 46.49 / 4, ali: "18650 battery with solder tabs",
-    note: "Use tabbed cells or spot-weld tabs; never solder to the can. Genuine Molicel P28A from a battery specialist is cheaper (about $7.50 each)." },
-  { name: "Power toggle", pick: "VIBICCK mini toggle MTS-102, ON/ON, 3-pin, 15 pcs", search: "VIBICCK 15PCS Mini Toggle Switch ON/ON MTS-102 3Pin", pack: "15 pcs", price: 3.99,
-    qty: () => "1", cost: () => 3.99 / 15, ali: "MTS 102 mini toggle switch 3 pin", note: "In the battery + lead. Off = battery disconnected, so charge with it on." },
-  { name: "Battery-sense resistors", pick: "2 × 100 kΩ, ¼ W metal film", search: "100k ohm 1/4W metal film resistor 100pcs", pack: "100 pcs", price: 5.49,
-    qty: () => "2", cost: () => 0.11, ali: "100K ohm metal film resistor", note: "Any equal pair from 10k to 220k works; 100k is ideal." },
-  { name: "Data resistor", pick: "EDGELEC 330 Ω ¼ W metal film, 100 pcs", asin: "B07HDFFN81", pack: "100 pcs", price: 5.49,
-    qty: () => "1", cost: () => 0.05, ali: "330 ohm metal film resistor", note: "In series between GPIO10 and the strip's DIN. Pick ¼ W, not ½ W." },
-  { name: "Tripod T-nut", pick: "1/4\"-20 T-nut, 4-prong, zinc-plated steel, 5/16\" barrel, 50 pcs", asin: "B0D7HFBGW7", pack: "50 pcs", price: 5.99,
-    qty: () => "1", cost: () => 5.99 / 50, ali: "T nut 4 prong 1 4 20 furniture", note: "Pick the 5/16\" barrel (not 7/16 or 9/16)." },
-  { name: "Steel hoop wire", pick: "OOK solid steel utility wire, 9 gauge (3.8 mm), galvanized, 50 ft", asin: "B00KHIZR80", pack: "50 ft", price: 12.49, hoop: true,
-    qty: (s) => (s.hoop_mm ? m(s.hoop_mm) : "not needed"), cost: (s) => (s.hoop_mm * 1.05 / 15240) * 12.49, ali: "9 gauge galvanized steel wire",
-    note: "16 in and up. TPU alone sags at that size; the hoop keeps the ring round." },
-  { name: "Silicone wire", pick: "BNTECHGO 22 AWG silicone wire, red + black, 10 ft each", asin: "B01C5DBKW6", pack: "2 × 10 ft", price: 7.48,
-    qty: () => "~40 cm", cost: () => 0.25, ali: "22AWG silicone wire red black", note: "1.7 mm across, fits the wire passages. Use 20 AWG for the short battery leads if you have it." },
-  { name: "Heat shrink", pick: "Ginsco 580 pcs 2:1 heat-shrink assortment", asin: "B01MFA3OFA", pack: "580 pcs", price: 6.99,
-    qty: () => "a few", cost: () => 0.05, ali: "heat shrink tube assortment", note: "" },
-  { name: "Wake button", optional: true, pick: "DAOKI 6 × 6 × 5 mm tact switch, 4-pin, 100 pcs", asin: "B01CGMP9GY", pack: "100 pcs", price: 5.49,
-    qty: () => "0–1", cost: () => 0, ali: "6x6x5mm tactile push button 4 pin",
-    note: "Only if your IP5310 doesn't start its 5 V by itself when the toggle turns on. Check the photos show 4 legs." },
-  { name: "Joint pins", pick: "Any 1.75 mm filament offcut", pack: "–", price: 0, qty: (s) => `${s.parts} short pieces`, cost: () => 0, note: "One pins each joint between parts." },
-];
+const PARTS = window.RL_PARTS || [];
+const SMALL_N = 2, BULK_N = 20;   // rings the two tiers are priced for
 
 let cur = SIZES.find((s) => s.in === 16) || SIZES[0];
 const picker = $("#size-picker");
@@ -238,26 +204,55 @@ function select(s) {
     <ul class="files">${s.files.map((f) => `<li><a href="${f.path}" download>${f.file}</a><span>${f.bed[0]} × ${f.bed[1]} mm · ${mb(f.kb)}</span></li>`).join("")}</ul>
     <div class="cta"><a class="btn btn-light" href="${s.zip}" download>All ${s.in} in files (.zip) <span aria-hidden="true">↓</span></a></div>`;
 }
+// what an offer costs for n rings: whole packs, bulk price tiers, and shipping when it isn't free
+function offerCost(o, p, s, n) {
+  if (o.price == null) return null;
+  const need = n * p.need(s);
+  if (!need) return 0;
+  let packs = Math.ceil(need / o.units - 1e-9), unit = o.price;
+  if (o.tiers) for (const [q, v] of o.tiers) if (packs >= q) unit = v;
+  let total = packs * unit;
+  if (o.ship && total < o.ship.freeOver) total += o.ship.flat;
+  return total;
+}
+const STORE = { amz: "Amazon", ali: "AliExpress", shop: "" };
+function offerHtml(o, p, s, n, best) {
+  const c = offerCost(o, p, s, n);
+  const per = c == null ? "" : `<span class="per">${fmt$(c / n)}<small>/ring</small></span>`;
+  const price = o.price == null ? '<span class="pp mute">search</span>' : `<span class="pp">$${o.price.toFixed(2)}${o.tiers ? " ea" : ""}</span>`;
+  const extra = [o.pick && `pick: ${o.pick}`, o.note].filter(Boolean).join(" · ");
+  return `<a class="offer ${o.s}${best ? " best" : ""}" href="${o.url}" target="_blank" rel="noopener nofollow">
+    <span class="st">${o.store || STORE[o.s]}</span><span class="what">${o.what}${extra ? `<small>${extra}</small>` : ""}</span>
+    ${price}${per}${best ? '<span class="badge">Best deal</span>' : ""}</a>`;
+}
+function tierHtml(list, p, s, n) {
+  if (!list.length) return '<p class="none">–</p>';
+  let bi = -1, bv = Infinity;
+  list.forEach((o, i) => { const c = offerCost(o, p, s, n); if (c != null && c < bv - 1e-9) { bv = c; bi = i; } });
+  const multi = list.filter((o) => o.price != null).length > 1;
+  return list.map((o, i) => offerHtml(o, p, s, n, multi && i === bi)).join("");
+}
+function bestCost(list, p, s, n) {
+  const v = list.map((o) => offerCost(o, p, s, n)).filter((c) => c != null);
+  return v.length ? Math.min(...v) : 0;
+}
 function renderParts(s) {
-  let ring = 0, packs = 0;
+  let small = 0, bulk = 0;
   const rows = PARTS.map((p) => {
     const na = p.hoop && !s.hoop_mm;
-    const c = na ? 0 : p.cost(s);
-    ring += c;
-    if (!na && !p.optional && p.price) packs += p.price;
-    const amz = p.asin ? amazon(p.asin) : p.search ? amazonSearch(p.search) : "";
-    const buy = [amz && `<a class="amz" href="${amz}" target="_blank" rel="noopener nofollow">Amazon</a>`, p.ali && `<a class="ali" href="${ali(p.ali)}" target="_blank" rel="noopener nofollow">AliExpress</a>`].filter(Boolean).join("");
-    const alt = p.alt ? ` <a href="${amazon(p.alt.asin)}" target="_blank" rel="noopener nofollow">${p.alt.label}</a>.` : "";
-    return `<div class="part${na ? " na" : ""}">
-      <h4>${p.name}${p.optional ? '<span class="opt">optional</span>' : ""}</h4>
-      <div class="pick">${p.pick}${p.note || alt ? `<small>${p.note}${alt}</small>` : ""}</div>
-      <div class="qty">${p.qty(s)}</div>
-      <div class="price">${p.price ? fmt$(p.price) + `<small>${p.pack}</small>` : "–"}</div>
-      <div class="buy">${buy}</div></div>`;
+    if (!na && !p.optional) { small += bestCost(p.small, p, s, SMALL_N); bulk += bestCost(p.bulk.length ? p.bulk : p.small, p, s, BULK_N) / BULK_N; }
+    return `<div class="part2${na ? " na" : ""}">
+      <div class="p-info"><h4>${p.name}${p.optional ? '<span class="opt">optional</span>' : ""}</h4>
+        <p class="qty">${p.qty(s)} per ring</p>${p.note ? `<p class="p-note">${p.note}</p>` : ""}</div>
+      <div class="tier"><p class="tier-h">1–2 rings</p>${na ? '<p class="none">not needed at this size</p>' : tierHtml(p.small, p, s, SMALL_N)}</div>
+      <div class="tier"><p class="tier-h">8–50 rings</p>${na ? '<p class="none">not needed at this size</p>' : tierHtml(p.bulk, p, s, BULK_N)}</div>
+    </div>`;
   });
-  $("#parts-list").innerHTML = `<div class="part head"><span>Part</span><span>What to get</span><span>Per ring</span><span>≈ Pack</span><span></span></div>` + rows.join("");
-  $("#cost").innerHTML = `<div><dt>Parts per ${s.in} in ring</dt><dd>≈ ${fmt$(ring)} <small>packs shared across rings</small></dd></div>
-    <div><dt>Every pack, once</dt><dd>≈ ${fmt$(packs)} <small>enough for 3+ rings</small></dd></div>`;
+  const C = window.RL_PRICES_CHECKED || {};
+  $("#parts-list").innerHTML = `<div class="part2 head"><span>Part</span><span>Small packs · per ring when building ${SMALL_N}</span><span>Bulk · per ring when building ${BULK_N}</span></div>` + rows.join("");
+  $("#cost").innerHTML = `<div><dt>Build ${SMALL_N} rings (${s.in} in)</dt><dd>≈ ${fmt$(small)} <small>${fmt$(small / SMALL_N)} per ring, cheapest small packs</small></dd></div>
+    <div><dt>Build ${BULK_N}+ rings</dt><dd>≈ ${fmt$(bulk)} <small>per ring, cheapest bulk options</small></dd></div>`;
+  $("#prices-checked").textContent = `AliExpress and 18650BatteryStore prices checked ${C.ali} (US store, shipping to the US); Amazon prices from price trackers, ${C.amz}. Prices move, so check before you order.`;
 }
 if (cur) select(cur);
 
