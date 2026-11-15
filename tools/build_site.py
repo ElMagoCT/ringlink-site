@@ -5,8 +5,6 @@
 Writes, inside website/:
   assets/ring16.bin   the 16 in ring (body decimated + strip + electronics) as a compact mesh pack for three.js
   img/*.webp          the lit Blender stills from v2/renders16
-  stl/<size>/...      print STLs (slim style) + one zip per size
-  js/data.js          sizes table (from v2/stl/summary.json) + STL file lists
   demo/app.html       the real RingLink control page (v2/firmware/ringlink/src/page.h) wired to demo/mock.js
 """
 import json
@@ -157,7 +155,7 @@ def build_demo():
 
 
 if __name__ == "__main__":
-    steps = sys.argv[1:] or ["meshes", "images", "stls", "demo"]
+    steps = sys.argv[1:] or ["meshes", "images", "demo"]   # STLs + parts list live on MakerWorld now
     if "meshes" in steps:
         build_meshes()
     if "images" in steps:

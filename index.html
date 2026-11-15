@@ -20,9 +20,7 @@
 <link rel="stylesheet" href="css/site.css">
 <link rel="preload" href="assets/ring16.bin" as="fetch" crossorigin>
 <script src="js/fw.js"></script>
-<script src="js/data.js"></script>
 <script src="js/sim.js"></script>
-<script src="js/parts.js"></script>
 </head>
 <body>
 <a class="skip" href="#features">Skip to content</a>
@@ -35,10 +33,8 @@
   <nav aria-label="Sections">
     <a href="#features">Features</a>
     <a href="#app">App</a>
-    <a href="#sizes">Sizes</a>
-    <a href="#parts">Parts</a>
     <a href="#build">Build</a>
-    <a href="#downloads">Downloads</a>
+    <a href="#faq">FAQ</a>
   </nav>
   <a class="btn btn-sm btn-glow" href="https://elmagoct.github.io/ringlink/" target="_blank" rel="noopener">Flash firmware <span aria-hidden="true">↗</span></a>
 </header>
@@ -65,43 +61,31 @@
         <div><dt>Effects</dt><dd>22</dd></div>
       </dl>
     </div>
-    <div class="hero-caption" aria-hidden="true">
-      <p>No router. No hub.<br>No app store.</p>
+    <div class="race-captions" aria-hidden="true">
+      <p data-s="0">Race mode. <span>The next gate glows green. The rest wait in blue.</span></p>
+      <p data-s="1">Click NEXT as it goes through. <span>The gate it passed turns white.</span></p>
+      <p data-s="3">The green moves on, gate to gate. <span>Laps, split times and a 3-2-1 countdown are built in.</span></p>
+      <p data-s="5">Last gate. <span>Every ring goes rainbow.</span></p>
     </div>
-    <div class="scroll-hint" aria-hidden="true"><span></span>Scroll to fly through</div>
-    <div class="hero-motion"><button type="button" class="pill motion-btn" hidden aria-pressed="false"><svg viewBox="0 0 16 16" aria-hidden="true"><path class="play" d="M5 3.5v9l7-4.5z"/><path class="pause" d="M4.5 3.5h2.5v9H4.5zM9 3.5h2.5v9H9z"/></svg><span>Play animation</span></button></div>
+    <div class="race-hud" aria-hidden="true">
+      <div class="rh-top"><span class="rh-state">Fly through gate 1 of 5</span><span class="rh-time mono">0:00.0</span></div>
+      <div class="rh-gates"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="rh-next">NEXT ▸ <b>2</b><span class="rh-click">click</span></div>
+    </div>
+    <div class="click-pop" aria-hidden="true"><span>click</span></div>
+    <div class="scroll-hint" aria-hidden="true"><span></span>Scroll to race</div>
+    <div class="hero-motion"><button type="button" class="pill motion-btn" aria-pressed="true"><svg viewBox="0 0 16 16" aria-hidden="true"><path class="play" d="M5 3.5v9l7-4.5z"/><path class="pause" d="M4.5 3.5h2.5v9H4.5zM9 3.5h2.5v9H9z"/></svg><span>Pause animation</span></button></div>
   </div>
-</section>
-
-<!-- ============================================================ STATEMENT -->
-<section class="statement container reveal">
-  <p>Every ring is the whole system. The first one you switch on makes a Wi-Fi network for your phone. <span class="mute">The others find it over ESP-NOW and pass every message along, gate to gate, so a whole course follows one tap.</span></p>
 </section>
 
 <!-- ============================================================ FEATURES -->
 <section class="section container" id="features">
   <header class="sec-head reveal">
     <p class="kicker">Features</p>
-    <h2>Built for the field,<br>not the bench.</h2>
+    <h2>Switch on. Join the Wi-Fi.<br>Race.</h2>
+    <p class="sub">The first ring on makes an open Wi-Fi network, <b>LED-Rings</b>. Join it and the controls pop up at <span class="mono">rings.local</span>. Every other ring follows over ESP-NOW. No router, no app store.</p>
   </header>
   <div class="bento">
-    <article class="card card-race span-2 reveal">
-      <div class="card-text">
-        <h3>Race mode</h3>
-        <p>Every gate waits in blue. Tap <b>START</b> and gate 1 turns green. Fly through, tap <b>NEXT</b>, and the green moves to the next gate. Laps, a 3-2-1 countdown, split times, undo, and a rainbow finish.</p>
-      </div>
-      <div class="race-viz" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-    </article>
-    <article class="card reveal">
-      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5a10 10 0 0 1 14 0M8 15.5a6 6 0 0 1 8 0M12 19h.01"/><path d="M3 3l18 18"/></svg>
-      <h3>No router needed</h3>
-      <p>Rings talk to each other directly. The first one on hosts the <b>LED-Rings</b> Wi-Fi and the page at <b>rings.local</b>. Switch the host off and another takes over in about five seconds.</p>
-    </article>
-    <article class="card reveal">
-      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2.5"/><circle cx="12" cy="6" r="2.5"/><circle cx="19" cy="12" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M7 11l3-3.5M14 7.5l3 3M17 13.5l-3 3M10 16.5l-3-3"/></svg>
-      <h3>Up to 50 rings</h3>
-      <p>Every ring relays what it hears, up to seven hops, so a line of gates about 50 ft apart stays in sync. The app shows each ring's signal.</p>
-    </article>
     <article class="card card-fx span-2 reveal">
       <div class="card-text">
         <h3>22 effects, five that run down the course</h3>
@@ -110,66 +94,26 @@
       <div class="fx-viz"><canvas id="fx-canvas" aria-hidden="true"></canvas><p class="fx-name mono" id="fx-name">Course Wave</p></div>
     </article>
     <article class="card reveal">
-      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 10.5v3"/><path d="M10.5 9.5 8.5 12h4l-2 2.5"/></svg>
-      <h3>One 18650, USB-C</h3>
-      <p>An IP5310 charges the cell and boosts it to 5 V. The app shows every ring's battery. A low ring blinks red, then switches its LEDs off before the cell runs flat.</p>
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2.5"/><circle cx="12" cy="6" r="2.5"/><circle cx="19" cy="12" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M7 11l3-3.5M14 7.5l3 3M17 13.5l-3 3M10 16.5l-3-3"/></svg>
+      <h3>Up to 50 rings</h3>
+      <p>Each ring relays what it hears, up to seven hops, so gates about 50 ft apart stay in sync.</p>
     </article>
     <article class="card reveal">
-      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18h16M6 18V9M10 18V6M14 18v-8M18 18v-5"/></svg>
-      <h3>Measures its own strip</h3>
-      <p>On its first battery boot a ring lights its LEDs in steps, watches the voltage dip and works out how many LEDs it has. No config file.</p>
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 10.5v3"/><path d="M10.5 9.5 8.5 12h4l-2 2.5"/></svg>
+      <h3>One 18650, USB-C</h3>
+      <p>Battery % per ring in the app. A low ring blinks red, then turns its LEDs off before the cell runs flat.</p>
     </article>
     <article class="card reveal">
       <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11M7.5 9.5 12 14l4.5-4.5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
-      <h3>Update every ring at once</h3>
-      <p>Upload one file and the host updates every ring it can reach, over Wi-Fi or Bluetooth. A bad update rolls itself back.</p>
-    </article>
-    <article class="card reveal">
-      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="5"/><path d="M12 13v4M12 17l-6 4M12 17l6 4M12 17v4"/></svg>
-      <h3>Tripod mount</h3>
-      <p>A 1/4-20 T-nut in the base fits any camera tripod or light stand.</p>
+      <h3>Updates every ring</h3>
+      <p>Upload one file and the host updates every ring it can reach, over Wi-Fi or Bluetooth.</p>
     </article>
     <article class="card reveal">
       <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.5"/><circle cx="12" cy="12" r="2"/></svg>
-      <h3>Five sizes</h3>
-      <p>8, 12, 16, 18 and 24 in. Rings from 16 in up carry a bent steel hoop inside so they stay round.</p>
+      <h3>8 to 24 in</h3>
+      <p>Five sizes, one tripod mount. Each ring measures its own LED strip the first time it runs.</p>
     </article>
   </div>
-</section>
-
-<!-- ============================================================ HOW IT WORKS -->
-<section class="section container how" id="how">
-  <header class="sec-head reveal">
-    <p class="kicker">How it works</p>
-    <h2>Three steps from<br>switch to start line.</h2>
-  </header>
-  <div class="how-grid">
-    <ol class="steps reveal">
-      <li><span class="num mono">01</span><div><h3>Switch on the rings</h3><p>The first ring on becomes the host. Each ring fills up with its battery level, then shows its firmware version in dots.</p></div></li>
-      <li><span class="num mono">02</span><div><h3>Join “LED-Rings”</h3><p>An open Wi-Fi network with no internet. The control page pops up by itself at <span class="mono">rings.local</span>.</p></div></li>
-      <li><span class="num mono">03</span><div><h3>Type the PIN and play</h3><p>You set the PIN when you flash. Every ring learns it, and each phone stays unlocked for 30 days.</p></div></li>
-    </ol>
-    <figure class="mesh reveal" aria-label="Diagram: a phone connects to the host ring over Wi-Fi; the rings relay to each other over ESP-NOW">
-      <svg viewBox="0 0 560 300" role="img">
-        <defs><radialGradient id="mg" r=".5"><stop offset="0" stop-color="currentColor" stop-opacity=".35"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></radialGradient></defs>
-        <g class="links">
-          <path d="M80 190 L190 130"/><path d="M190 130 L300 185"/><path d="M300 185 L410 120"/><path d="M410 120 L505 175"/><path d="M190 130 L410 120" class="faint"/>
-        </g>
-        <path class="wifi" d="M80 190 L80 72"/>
-        <g class="rings">
-          <g transform="translate(80 190)"><circle r="40" class="glow"/><circle r="22"/><text y="50">host</text></g>
-          <g transform="translate(190 130)"><circle r="40" class="glow"/><circle r="22"/><text y="50">2</text></g>
-          <g transform="translate(300 185)"><circle r="40" class="glow"/><circle r="22"/><text y="50">3</text></g>
-          <g transform="translate(410 120)"><circle r="40" class="glow"/><circle r="22"/><text y="50">4</text></g>
-          <g transform="translate(505 175)"><circle r="40" class="glow"/><circle r="22"/><text y="50">5</text></g>
-        </g>
-        <g class="phone" transform="translate(62 18)"><rect width="36" height="56" rx="7"/><rect x="5" y="7" width="26" height="38" rx="2" class="scr"/></g>
-        <text class="lab" x="110" y="58">Wi-Fi · rings.local</text>
-        <text class="lab" x="300" y="262" text-anchor="middle">ESP-NOW relay, up to 7 hops</text>
-      </svg>
-    </figure>
-  </div>
-  <p class="note reveal">Out of Wi-Fi range, or on a laptop? <a href="https://elmagoct.github.io/ringlink/control.html" target="_blank" rel="noopener">Control over Bluetooth or USB</a> opens the same controls from the flasher site. On iPhone, use the free Bluefy browser for Bluetooth.</p>
 </section>
 
 <!-- ============================================================ APP DEMO -->
@@ -178,7 +122,7 @@
     <header class="sec-head reveal">
       <p class="kicker">The app</p>
       <h2>The remote is a web page.<br>Try it.</h2>
-      <p class="sub">This is the real control page from the RingLink firmware, running here against five simulated rings. Pick a Look, drag the gates into a new order, or start a race.</p>
+      <p class="sub">The real control page from the RingLink firmware, running against five simulated rings. Pick a Look, drag the gates into a new order, or start a race.</p>
     </header>
   </div>
   <div class="demo container reveal">
@@ -186,8 +130,7 @@
       <canvas id="course-canvas" aria-label="Five simulated rings on a course, showing whatever the app sends"></canvas>
       <div class="demo-hud">
         <span class="pill mono"><span class="live"></span>Simulated · 5 rings · v<span class="fw-ver">2.9</span></span>
-        <label class="pill toggle"><input type="checkbox" id="auto-next" checked> Drone taps NEXT for you</label>
-        <button type="button" class="pill motion-btn" hidden aria-pressed="false"><svg viewBox="0 0 16 16" aria-hidden="true"><path class="play" d="M5 3.5v9l7-4.5z"/><path class="pause" d="M4.5 3.5h2.5v9H4.5zM9 3.5h2.5v9H9z"/></svg><span>Play animation</span></button>
+        <label class="pill toggle"><input type="checkbox" id="auto-next" checked> Drone clicks NEXT for you</label>
       </div>
       <img class="demo-fallback" src="img/ring16-front-sm.webp" alt="" aria-hidden="true">
     </div>
@@ -196,190 +139,25 @@
       <iframe id="app-frame" title="RingLink control page (demo)" src="demo/app.html" loading="lazy"></iframe>
     </div>
   </div>
-  <div class="container">
-    <ul class="app-points reveal">
-      <li><b>Show</b> Looks, 22 effects, brightness, speed, size and three colours, for every ring at once.</li>
-      <li><b>Race</b> START or 3-2-1 Go, then NEXT at each gate. Laps, splits and undo.</li>
-      <li><b>Rings</b> Name each ring, set its size, drag it into course order, check battery and signal, update firmware.</li>
-    </ul>
-  </div>
-</section>
-
-<!-- ============================================================ SIZES -->
-<section class="section container" id="sizes">
-  <header class="sec-head reveal">
-    <p class="kicker">Sizes</p>
-    <h2>Pick a size.</h2>
-    <p class="sub">Every size uses the same base, electronics and firmware. The parts list and downloads below follow your pick.</p>
-  </header>
-  <div class="size-picker reveal" role="radiogroup" aria-label="Ring size" id="size-picker"></div>
-  <div class="size-card reveal" id="size-card"></div>
-  <div class="table-wrap reveal">
-    <table class="tbl" id="size-table">
-      <caption class="sr">All sizes compared</caption>
-      <thead><tr><th>Size</th><th>Parts</th><th>LEDs</th><th>Strip</th><th>TPU</th><th>Largest part</th><th>Steel hoop</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</section>
-
-<!-- ============================================================ PARTS -->
-<section class="section container" id="parts">
-  <header class="sec-head reveal">
-    <p class="kicker">Parts list</p>
-    <h2>Everything in one ring.</h2>
-    <p class="sub">Every part with a small-pack and a bulk option, priced per <b class="size-label">16 in</b> ring. <span class="best-k">Best deal</span> marks the cheapest for that quantity, shipping included where the store shows it.</p>
-  </header>
-  <dl class="cost reveal" id="cost"></dl>
-  <div class="parts reveal" id="parts-list"></div>
-  <p class="note reveal" id="prices-checked"></p>
-  <p class="note reveal">AliExpress <b>Choice</b> listings ship free once your Choice items reach $10, so order the AliExpress parts together. Links marked “search” open a search; match the specs.</p>
 </section>
 
 <!-- ============================================================ BUILD -->
 <section class="section container" id="build">
-  <header class="sec-head reveal">
-    <p class="kicker">Build guide</p>
-    <h2>Print, wire, snap together.</h2>
-    <p class="sub">Tools: a soldering iron, a multimeter, flush cutters, heat shrink and a 1/4-20 bolt to pull in the T-nut. Photos of each step are on the way.</p>
-  </header>
-
-  <div class="build-part reveal">
-    <div class="bp-head"><span class="mono">A</span><h3>Print</h3></div>
-    <div class="print-grid">
-      <div>
-        <p>Print in <b>clear TPU</b>, one part per plate, laid out like this:</p>
-        <ul class="ticks">
-          <li><b>Sections:</b> front face down.</li>
-          <li><b>Base:</b> standing on its bottom.</li>
-          <li><b>Cover:</b> outer face down.</li>
-        </ul>
-        <p>No supports and no brim. Dry the filament for 6–8 h at 50–60 °C first; wet TPU strings and turns cloudy.</p>
-        <p class="note">Your printer needs a bed of at least <b class="bed-label">241 mm</b> for the size you picked.</p>
+  <div class="build-cta reveal">
+    <div>
+      <p class="kicker">Build one</p>
+      <h2>Print it. Wire it.<br>Flash it.</h2>
+      <ol class="mini-steps">
+        <li><span class="mono">01</span><div><b>Print</b> four to seven parts in clear TPU, plus a cover.</div></li>
+        <li><span class="mono">02</span><div><b>Wire</b> an 18650, a USB-C charger, an ESP32-C3 SuperMini and a WS2812B strip. About $17 a ring in bulk.</div></li>
+        <li><span class="mono">03</span><div><b>Flash</b> the firmware from Chrome or Edge. Nothing to install.</div></li>
+      </ol>
+      <div class="cta">
+        <a class="btn btn-light" id="mw-link" href="https://makerworld.com/en/search/models?keyword=crystal+gates" target="_blank" rel="noopener">Files, parts &amp; guide on MakerWorld <span aria-hidden="true">↗</span></a>
+        <a class="btn btn-ghost" href="https://elmagoct.github.io/ringlink/" target="_blank" rel="noopener">Flash firmware <span aria-hidden="true">↗</span></a>
       </div>
-      <dl class="specs">
-        <div><dt>Profile</dt><dd>Bambu Lab P1S · 0.6 mm nozzle · CC3D TPU 72D</dd></div>
-        <div><dt>Layer height</dt><dd>0.30 mm</dd></div>
-        <div><dt>Walls / infill</dt><dd>2 walls · 10 % gyroid</dd></div>
-        <div><dt>Nozzle</dt><dd>243 °C (245 °C first layer)</dd></div>
-        <div><dt>Bed</dt><dd>40 °C (45 °C first layer) · textured PEI</dd></div>
-        <div><dt>Flow</dt><dd>max 8 mm³/s · fan ≤ 50 %</dd></div>
-        <div><dt>Retraction</dt><dd>0.8 mm</dd></div>
-      </dl>
     </div>
-    <div class="photos">
-      <figure class="ph" data-src="img/build/01-print-plate.jpg"><figcaption>Parts on the plate</figcaption></figure>
-      <figure class="ph" data-src="img/build/02-printed-set.jpg"><figcaption>A printed set</figcaption></figure>
-    </div>
-  </div>
-
-  <div class="build-part reveal">
-    <div class="bp-head"><span class="mono">B</span><h3>Wire</h3></div>
-    <figure class="wiring">
-      <svg viewBox="0 0 820 400" role="img" aria-label="Wiring diagram">
-        <defs>
-          <g id="gnd"><path d="M-9 0h18M-6 5h12M-3 10h6" /></g>
-          <g id="res"><path d="M0 0h8l4-7 8 14 8-14 8 14 8-14 4 7h8"/></g>
-        </defs>
-        <!-- parts -->
-        <g class="w-part">
-          <rect x="40" y="300" width="170" height="52" rx="12"/><text x="125" y="331" text-anchor="middle">18650 cell</text>
-          <text x="54" y="331" class="pin-l">−</text><text x="196" y="331" class="pin-l" text-anchor="end">+</text>
-          <rect x="256" y="214" width="52" height="40" rx="6"/><text x="248" y="238" text-anchor="end" class="small">Toggle</text>
-          <rect x="370" y="170" width="160" height="170" rx="12"/><text x="440" y="270" text-anchor="middle">IP5310</text><text x="440" y="290" text-anchor="middle" class="small">charger + boost</text>
-          <rect x="425" y="330" width="50" height="18" rx="6" class="port"/><text x="450" y="370" text-anchor="middle" class="small">USB-C · charge</text>
-          <rect x="620" y="40" width="160" height="150" rx="12"/><text x="700" y="110" text-anchor="middle">ESP32-C3</text><text x="700" y="130" text-anchor="middle" class="small">SuperMini</text>
-          <rect x="620" y="262" width="170" height="80" rx="12"/><text x="705" y="318" text-anchor="middle">WS2812B strip</text>
-          <g class="leds"><circle cx="645" cy="290" r="4"/><circle cx="675" cy="290" r="4"/><circle cx="705" cy="290" r="4"/><circle cx="735" cy="290" r="4"/><circle cx="765" cy="290" r="4"/></g>
-        </g>
-        <!-- pin labels -->
-        <g class="pin-t">
-          <text x="378" y="194">B+</text><text x="378" y="304">B−</text>
-          <text x="522" y="204" text-anchor="end">5V+</text><text x="522" y="232" text-anchor="end">5V−</text><text x="522" y="314" text-anchor="end">KEY</text>
-          <text x="628" y="74">GPIO3</text>
-          <text x="650" y="182" text-anchor="middle">5V</text><text x="700" y="182" text-anchor="middle">IO10</text><text x="750" y="182" text-anchor="middle">G</text>
-          <text x="650" y="280" text-anchor="middle">5V</text><text x="700" y="280" text-anchor="middle">DIN</text><text x="750" y="280" text-anchor="middle">GND</text>
-        </g>
-        <!-- battery + through the toggle -->
-        <path class="w pos" d="M210 326H282V254"/>
-        <path class="w pos" d="M282 214V190H370"/>
-        <!-- battery - -->
-        <path class="w neg" d="M40 326V378H350V300H370"/>
-        <!-- 5 V and ground to ESP + strip -->
-        <path class="w pos" d="M530 200H650"/><path class="w pos" d="M650 190V262"/>
-        <path class="w neg" d="M530 228H548V384H805V228H750"/><path class="w neg" d="M750 190V262"/>
-        <!-- data through 330 ohm -->
-        <path class="w data" d="M700 190V206"/><use href="#res" class="w data" transform="translate(700 206) rotate(90) scale(.62)"/><path class="w data" d="M700 245V262"/>
-        <text x="712" y="230" class="small data-t">330 Ω</text>
-        <!-- battery sense divider -->
-        <circle cx="330" cy="190" r="4" class="node"/>
-        <path class="w sense" d="M330 190V70H346"/><use href="#res" class="w sense" transform="translate(346 70)"/><path class="w sense" d="M410 70H620"/>
-        <text x="378" y="56" text-anchor="middle" class="small sense-t">100k</text>
-        <circle cx="440" cy="70" r="4" class="node"/>
-        <path class="w sense" d="M440 70V88"/><use href="#res" class="w sense" transform="translate(440 88) rotate(90) scale(.62)"/><path class="w sense" d="M440 128V140"/>
-        <use href="#gnd" class="w neg" transform="translate(440 140)"/>
-        <text x="452" y="112" class="small sense-t">100k</text><text x="452" y="160" class="small">to ESP G</text>
-        <!-- optional wake button -->
-        <path class="w opt" d="M530 310H570"/><circle cx="574" cy="310" r="3" class="node-o"/><path class="w opt" d="M578 302l14 -8"/><circle cx="594" cy="310" r="3" class="node-o"/>
-        <path class="w opt" d="M597 310H604V322"/><use href="#gnd" class="w opt" transform="translate(604 322)"/>
-        <text x="586" y="372" class="small">wake button (optional)</text>
-      </svg>
-      <figcaption class="legend">
-        <span><i class="k pos"></i>battery + / 5 V</span><span><i class="k neg"></i>ground</span><span><i class="k data"></i>LED data</span><span><i class="k sense"></i>battery sense</span>
-      </figcaption>
-    </figure>
-    <div class="table-wrap">
-      <table class="tbl wire-tbl">
-        <thead><tr><th>From</th><th>To</th><th>Wire</th><th>Note</th></tr></thead>
-        <tbody>
-          <tr><td>18650 + (tab)</td><td>Toggle middle lug</td><td class="mono">20 AWG</td><td>Short leads, 5 cm or less. Solder to a welded tab, never the can.</td></tr>
-          <tr><td>Toggle outer lug</td><td>IP5310 B+</td><td class="mono">20 AWG</td><td>Switch off = battery disconnected: no drain, and no charging.</td></tr>
-          <tr><td>18650 − (tab)</td><td>IP5310 B−</td><td class="mono">20 AWG</td><td></td></tr>
-          <tr><td>IP5310 5V OUT +</td><td>ESP32 5V + strip 5V</td><td class="mono">22 AWG</td><td>The IP5310's USB-C is the charge port.</td></tr>
-          <tr><td>IP5310 5V OUT −</td><td>ESP32 G + strip GND</td><td class="mono">22 AWG</td><td></td></tr>
-          <tr><td>ESP32 GPIO10</td><td>330 Ω → strip DIN</td><td class="mono">26 AWG</td><td>The arrows on the strip point away from the start.</td></tr>
-          <tr><td>IP5310 B+ (toggle side)</td><td>100k → junction → ESP32 GPIO3</td><td class="mono">26 AWG</td><td>Battery sense. Tapped after the toggle so it draws nothing when off (about 21 µA when on).</td></tr>
-          <tr><td>Divider junction</td><td>100k → ESP32 G</td><td class="mono">–</td><td>Solder the two resistors end to end and heat-shrink them into one ~4 × 18 mm stick.</td></tr>
-          <tr><td>IP5310 KEY pad <span class="mute">(optional)</span></td><td>Tact switch → GND</td><td class="mono">26 AWG</td><td>Only if your board's 5 V doesn't start by itself when the toggle turns on.</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="build-part reveal">
-    <div class="bp-head"><span class="mono">C</span><h3>Assemble</h3></div>
-    <ol class="assembly" id="assembly">
-      <li data-src="img/build/03-strip-leads.jpg"><h4>Get the strip ready</h4><p>Cut one piece with <b class="leds-label">71</b> LEDs, cutting across the copper pads. Solder three leads to the start pads <em>before</em> you thread it.</p></li>
-      <li data-src="img/build/04-divider.jpg"><h4>Make the divider stick</h4><p>Solder the two 100k resistors end to end with a lead off the middle, then heat-shrink them into one stick about 4 × 18 mm.</p></li>
-      <li data-src="img/build/05-cell.jpg"><h4>Solder the cell</h4><p>Tabbed 18650, short 20 AWG leads: <b>+</b> to the toggle's middle lug, <b>−</b> to IP5310 B−.</p></li>
-      <li data-src="img/build/06-toggle.jpg"><h4>Fit the toggle</h4><p>The toggle goes out the left side of the base. Its outer lug goes to IP5310 B+.</p></li>
-      <li data-src="img/build/07-charger-esp.jpg"><h4>Charger and ESP32</h4><p>Stack them at the cell end of the bay. Wire 5V OUT to the ESP32 and the strip leads, and GPIO10 through the 330 Ω to DIN.</p></li>
-      <li data-src="img/build/08-divider-in.jpg"><h4>Fit the divider stick</h4><p>Top lead to IP5310 B+ on the toggle side, middle lead to GPIO3, bottom lead to G.</p></li>
-      <li data-src="img/build/09-flash.jpg"><h4>Flash the firmware</h4><p>Ring switch off, ESP32 on USB, then open the <a href="https://elmagoct.github.io/ringlink/" target="_blank" rel="noopener">web flasher</a> in Chrome or Edge and choose your PIN. Do this before the cover goes on; after that, updates go over Bluetooth or Wi-Fi.</p></li>
-      <li data-src="img/build/10-thread.jpg"><h4>Thread the strip</h4><p>Feed it through the tunnel. Its leads come through the wire slot into the bay. <span class="hoop-only">Then bend the steel hoop to the curve and thread it through the lobe; its ends meet in the base.</span></p></li>
-      <li data-src="img/build/11-pins.jpg"><h4>Pin the joints</h4><p>Push the parts together and lock each joint with a short piece of 1.75 mm filament. <b class="pins-label">4</b> pins for this size.</p></li>
-      <li data-src="img/build/12-cover.jpg"><h4>Snap on the cover</h4><p>It closes the bay over the electronics.</p></li>
-      <li data-src="img/build/13-tnut.jpg"><h4>Press in the T-nut</h4><p>Pull it home with a 1/4-20 bolt so a tripod screws straight in.</p></li>
-      <li data-src="img/build/14-first-on.jpg"><h4>Switch it on</h4><p>On battery, a new ring lights its strip white in steps, then the LEDs it found in green. Then it shows its battery and version. Calibrate the battery reading once: measure B+/B− with a meter, type the reading into the Rings tab and tap <b>Calibrate</b>.</p></li>
-    </ol>
-  </div>
-</section>
-
-<!-- ============================================================ DOWNLOADS -->
-<section class="section container" id="downloads">
-  <header class="sec-head reveal">
-    <p class="kicker">Downloads</p>
-    <h2>Files and firmware.</h2>
-  </header>
-  <div class="dl-grid">
-    <article class="card dl-fw reveal">
-      <p class="kicker">RingLink firmware v<span class="fw-ver">2.9</span></p>
-      <h3>Flash it from your browser</h3>
-      <p>Plug the ESP32-C3 into a computer with Chrome or Edge, choose a controls PIN and click Install. Nothing to install on your computer.</p>
-      <div class="cta"><a class="btn btn-light" href="https://elmagoct.github.io/ringlink/" target="_blank" rel="noopener">Open the web flasher <span aria-hidden="true">↗</span></a>
-      <a class="btn btn-ghost" href="https://elmagoct.github.io/ringlink/control.html" target="_blank" rel="noopener">Control over Bluetooth / USB</a></div>
-    </article>
-    <article class="card dl-stl reveal" id="dl-stl"></article>
+    <figure class="build-img"><img src="img/ring16-front.webp" alt="A 16 inch Crystal Gate, lit" loading="lazy"><figcaption class="mono">16 in · 71 LEDs · 4 parts + cover</figcaption></figure>
   </div>
 </section>
 
@@ -387,13 +165,10 @@
 <section class="section container faq" id="faq">
   <header class="sec-head reveal"><p class="kicker">Questions</p><h2>Good to know.</h2></header>
   <div class="faq-list reveal">
-    <details><summary>Do I need internet or a router?</summary><p>No. The rings make their own Wi-Fi network, <b>LED-Rings</b>, and talk to each other over ESP-NOW. Your phone joins that network and opens <span class="mono">rings.local</span>.</p></details>
-    <details><summary>How many rings can I run?</summary><p>The firmware handles up to 50 rings in one set and up to 50 gates in the course order. We've flown four together so far, so tell us how bigger sets go.</p></details>
-    <details><summary>How far apart can the gates be?</summary><p>Each ring passes messages on, up to seven hops, so a line of gates about 50 ft apart works. The Rings tab shows each ring's signal; aim for 90 % of messages heard.</p></details>
-    <details><summary>Does it work on iPhone?</summary><p>Yes. The Wi-Fi control page works in Safari, and you can add it to your home screen. For Bluetooth control on iPhone, use the free Bluefy browser.</p></details>
-    <details><summary>How do I update rings once the cover is on?</summary><p>From the app: Rings → Firmware → pick the update file → Update all rings. It works over Wi-Fi from the host, or over Bluetooth from the flasher site, and each ring rolls back by itself if an update fails.</p></details>
-    <details><summary>Can I sell rings I build?</summary><p>Not without asking. Everything here is <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener">CC BY-NC-SA 4.0</a>: free to build, share and change for non-commercial use, with credit, and changes shared under the same terms.</p></details>
-    <details><summary>Why clear TPU?</summary><p>It flexes instead of cracking when a quad clips it, and the clear plastic spreads the LED light through the whole ring instead of showing dots.</p></details>
+    <details><summary>Do I need internet or a router?</summary><p>No. The rings make their own Wi-Fi network and talk to each other over ESP-NOW. Your phone joins it and opens <span class="mono">rings.local</span>.</p></details>
+    <details><summary>How many rings, how far apart?</summary><p>Up to 50 rings in one set. Each ring passes messages on, up to seven hops, so gates about 50 ft apart work. We've flown four together so far.</p></details>
+    <details><summary>Does it work on iPhone?</summary><p>Yes. The control page works in Safari. For Bluetooth control on iPhone, use the free Bluefy browser.</p></details>
+    <details><summary>Can I sell rings I build?</summary><p>Not without asking. Everything is <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener">CC BY-NC-SA 4.0</a>: free to build, share and change for non-commercial use, with credit.</p></details>
   </div>
 </section>
 </main>
@@ -406,11 +181,10 @@
     </div>
     <div class="foot-links">
       <a href="https://elmagoct.github.io/ringlink/" target="_blank" rel="noopener">Web flasher</a>
-      <a href="#parts">Parts list</a>
-      <a href="#build">Build guide</a>
-      <a href="#downloads">STL files</a>
+      <a href="https://makerworld.com/en/search/models?keyword=crystal+gates" target="_blank" rel="noopener">MakerWorld</a>
+      <a href="https://elmagoct.github.io/ringlink/control.html" target="_blank" rel="noopener">Bluetooth / USB control</a>
     </div>
-    <p class="mute small license" id="license">The designs, STL files and RingLink firmware are licensed <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener license">CC BY-NC-SA 4.0</a>: build them, share them and remix them with credit, but don't sell them. 3D view built with three.js (MIT).</p>
+    <p class="mute small license" id="license">The designs and RingLink firmware are licensed <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener license">CC BY-NC-SA 4.0</a>: build them, share them and remix them with credit, but don't sell them. 3D view built with three.js (MIT).</p>
   </div>
 </footer>
 

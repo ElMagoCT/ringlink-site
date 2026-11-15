@@ -270,109 +270,165 @@ function fit(renderer, camera, canvas, objs) {
   objs.forEach((o) => o.setPx(px));
 }
 
-// ================================================================ HERO: one ring, a drone looping through it
-export async function initHero(canvas, { packUrl, onColor, progress }) {
+// ================================================================ HERO: a race you scroll through
+// Five gates in race mode (waiting blue, next green, passed white). Scrolling flies the drone through them;
+// each pass is a NEXT "click". After the last gate every ring goes rainbow, then the page scrolls on.
+export async function initHero(canvas, { packUrl, onColor, progress, onRace }) {
   const pack = await loadPack(packUrl);
   const Sim = window.RingSim;
-  const renderer = makeRenderer(canvas), scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(32, 1, 5, 30000);
-  scene.fog = new THREE.FogExp2(0x060709, 0.00012);
+  const renderer = makeRenderer(canvas), scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(34, 1, 5, 40000);
+  scene.fog = new THREE.FogExp2(0x060709, 0.0001);
   const pl = lights(scene);
-  const ring = makeRing(pack, { reflect: true, halo: 110 });
-  ring.setCount(71);
-  scene.add(ring.group);
-  const BACK = [[1350, -2300, -0.55], [2750, -4500, -0.6], [4000, -6900, -0.5]].map(([x, z, ry], i) => {
-    const o = makeRing(pack, { reflect: true, halo: 110 });
-    o.setCount(71); o.group.position.set(x, 0, z); o.group.rotation.y = ry; scene.add(o.group);
-    return { o, r: Sim.makeRing({ leds: 71, order: i + 2 }) };
+  const P = (x, y, z) => new THREE.Vector3(x, y, z);
+
+  // course: gate 1 is the hero ring at the origin, the rest snake away from the camera
+  const GP = [P(0, 0, 0), P(950, 0, -1550), P(2350, 0, -2650), P(3950, 0, -3250), P(5650, 0, -3500)];
+  const N = GP.length, START = P(-140, 50, 560);
+  const dirs = GP.map((g, i) => {
+    const a = i ? GP[i - 1] : P(0, 0, 900), b = GP[i + 1] || g.clone().add(g.clone().sub(GP[i - 1]));
+    return b.clone().sub(a).setY(0).normalize();
   });
-  const fl = floor(scene, -BASE_BOTTOM, 14000, 520);
+  const gates = GP.map((g, i) => {
+    const o = makeRing(pack, { reflect: true, halo: 110 });
+    o.setCount(71);
+    o.group.position.copy(g);
+    o.group.rotation.y = Math.atan2(-dirs[i].x, -dirs[i].z);   // ring normal along the flight line
+    scene.add(o.group);
+    return { o, r: Sim.makeRing({ leds: 71, order: i + 1 }), pos: g };
+  });
+  const pts = [START];
+  GP.forEach((g, i) => pts.push(g.clone().addScaledVector(dirs[i], -330), g.clone(), g.clone().addScaledVector(dirs[i], 330)));
+  const last = GP[N - 1], ld = dirs[N - 1];
+  pts.push(last.clone().addScaledVector(ld, 900).add(P(0, 260, 0)), last.clone().addScaledVector(ld, 1700).add(P(0, 900, 0)));
+  const curve = new THREE.CatmullRomCurve3(pts, false, "centripetal");
+  const L = curve.getLength();
+  const gateU = GP.map((g) => uNearest(curve, g, 3000));
+
+  // floor with a glow under every gate
+  const fm = new THREE.ShaderMaterial({
+    uniforms: { uP: { value: GP.map((g) => new THREE.Vector2(g.x, g.z)) }, uC: { value: GP.map(() => new THREE.Color()) } },
+    vertexShader: "varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }",
+    fragmentShader: `uniform vec2 uP[${N}]; uniform vec3 uC[${N}]; varying vec3 vW;
+      void main(){ vec3 c = vec3(0.0);
+        for (int i = 0; i < ${N}; i++) { vec2 d = vW.xz - uP[i]; c += uC[i] * 0.4 * exp(-dot(d, d) / 280000.0); }
+        vec2 g = abs(fract(vW.xz / 250.0 - 0.5) - 0.5) / fwidth(vW.xz / 250.0);
+        c += vec3(0.55, 0.65, 0.85) * (1.0 - min(min(g.x, g.y), 1.0)) * 0.045 * exp(-length(vW.xz - vec2(2800.0, -1800.0)) / 5200.0);
+        gl_FragColor = vec4(c, 1.0); }`,
+    transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  const fmesh = new THREE.Mesh(new THREE.PlaneGeometry(30000, 30000), fm);
+  fmesh.rotation.x = -Math.PI / 2; fmesh.position.set(2800, -BASE_BOTTOM, -1800); scene.add(fmesh);
+
   const drone = makeDrone(); scene.add(drone.group);
 
-  const P = (x, y, z) => new THREE.Vector3(x, y, z);
-  const curve = new THREE.CatmullRomCurve3([P(0, 0, -260), P(0, 0, 0), P(0, 0, 260), P(-60, 60, 700), P(-420, 230, 1150), P(-1150, 420, 650),
-    P(-1350, 380, -450), P(-750, 200, -1250), P(-150, 60, -900)], true, "centripetal");
-  const flight = makeFlight(curve, 1250, 2700);
-  const uGate = uNearest(curve, P(0, 0, 0));
-
-  // looks the hero cycles through: each pass through the gate moves to the next one
-  const H = Sim.hex;
-  const LOOKS = [
-    { race: 1 },
-    { effect: 1, c: ["ff0000", "000000", "000000"], speed: 150 },
-    { effect: 11, c: ["ff00c8", "00e5ff", "000000"], speed: 140, intensity: 120 },
-    { effect: 4, c: ["00b0ff", "001020", "000000"], speed: 170, intensity: 160 },
-    { effect: 19, c: ["0050ff", "00e0b0", "000000"], speed: 140 },
-    { effect: 8, c: ["ff3000", "000000", "000000"], speed: 128, intensity: 140 },
-    { effect: 5, c: ["ff5a00", "ff0070", "000000"], speed: 150, intensity: 160 },
-  ];
-  const r = Sim.makeRing({ leds: 71, order: 1 });
-  const show = { power: 1, effect: 1, bri: 255, speed: 128, intensity: 128, c: [[0, 0, 0], [0, 0, 0], [0, 0, 0]], mode: 0, numbers: 0,
-    rc: [H("0028ff"), H("00ff40"), H("0028ff")] };
-  const race = { target: 1, go: 1, lap: 1, laps: 1 };
-  let look = 0, flash = 0, speedT = 0;
-  const setLook = (i) => {
-    look = i % LOOKS.length; const L = LOOKS[look];
-    show.mode = L.race ? 1 : 0; race.target = 1;
-    if (!L.race) { show.effect = L.effect; show.c = L.c.map(H); show.speed = L.speed || 128; show.intensity = L.intensity || 128; }
+  // drone pose on the open curve: banks into turns, nose down
+  const T0 = P(0, 0, 0), T1 = P(0, 0, 0), up = P(0, 0, 0), bx = P(0, 0, 0), by = P(0, 0, 0), M = new THREE.Matrix4();
+  const pitch = new THREE.Quaternion().setFromAxisAngle(P(1, 0, 0), 0.3);
+  const cl = (u) => Math.min(1, Math.max(0, u));
+  function pose(u, speed, t) {
+    u = cl(u);
+    curve.getPointAt(u, drone.group.position);
+    drone.group.position.y += Math.sin(t * 2.2) * 6 * (1 - Math.min(1, speed / 400));   // hovers when you stop scrolling
+    const f = curve.getTangentAt(Math.min(u, 0.999), P(0, 0, 0));
+    const du = 0.004;
+    curve.getTangentAt(cl(u + du), T1); curve.getTangentAt(cl(u - du), T0);
+    const kv = T1.sub(T0).multiplyScalar(1 / (2 * du * L));
+    const v = Math.min(3200, 700 + speed);
+    up.set(0, 9810, 0).addScaledVector(kv, v * v);
+    by.copy(up).addScaledVector(f, -up.dot(f)).normalize();
+    bx.crossVectors(by, f);
+    M.makeBasis(bx, by, f);
+    drone.group.quaternion.setFromRotationMatrix(M).multiply(pitch);
+    return f;
+  }
+  // a point on the curve, extended in a straight line past either end
+  const along = (u, out) => {
+    if (u < 0) return curve.getPointAt(0, out).addScaledVector(curve.getTangentAt(0, P(0, 0, 0)), u * L);
+    if (u > 1) return curve.getPointAt(1, out).addScaledVector(curve.getTangentAt(1, P(0, 0, 0)), (u - 1) * L);
+    return curve.getPointAt(u, out);
   };
-  setLook(moving() ? 0 : 1);
 
-  const cam = { pos: P(0, 0, 0), tgt: P(0, 0, 0), mx: 0, my: 0, tx: 0, ty: 0 };
-  const KEYS = [[0, P(-760, 170, 1650), P(30, -40, 0)], [0.55, P(-60, 30, 1150), P(0, 0, 0)], [1, P(150, 10, -700), P(1350, -20, -2300)]];
+  // scroll -> race: 0..0.05 intro, 0.05..0.86 the flight, then the finish
   const ease = (x) => x * x * (3 - 2 * x);
-  function placeCamera(p) {
-    let i = 0; while (i < KEYS.length - 2 && p > KEYS[i + 1][0]) i++;
-    const [a, pa, ta] = KEYS[i], [b, pb, tb] = KEYS[i + 1], k = ease(Math.min(1, Math.max(0, (p - a) / (b - a))));
-    cam.pos.lerpVectors(pa, pb, k); cam.tgt.lerpVectors(ta, tb, k);
+  const ss = (a, b, x) => ease(Math.min(1, Math.max(0, (x - a) / (b - a))));
+  const A = 0.05, B = 0.86;
+  const uEnd = Math.min(1, gateU[N - 1] + 380 / L);
+  const KNOT = [0, ...gateU.map((g, i) => (i < N - 1 ? g + 0.35 * (gateU[i + 1] - g) : uEnd))];   // between gates
+  function scrollToU(p) {
+    if (p <= A) return 0;
+    if (p >= B) return uEnd + (1 - uEnd) * ss(B, 1, p) * 0.6;
+    const x = ((p - A) / (B - A)) * N, k = Math.min(N - 1, Math.floor(x));
+    return KNOT[k] + (KNOT[k + 1] - KNOT[k]) * (x - k);
+  }
+  const show = { power: 1, effect: 0, bri: 255, speed: 128, intensity: 128, c: [[0, 0, 0], [0, 0, 0], [0, 0, 0]], mode: 1, numbers: 0,
+    rc: [Sim.hex("0028ff"), Sim.hex("00ff40"), Sim.hex("ffffff")] };
+  const race = { target: 1, go: 1, lap: 1, laps: 1 };
+  let u = 0, uPrev = 0, passed = 0, tms = 0, colorT = 0, flash = GP.map(() => 0);
+  const camPos = P(0, 0, 0), camTgt = P(0, 0, 0), tmpA = P(0, 0, 0), tmpB = P(0, 0, 0);
+  const mid = GP.reduce((a, g) => a.add(g), P(0, 0, 0)).multiplyScalar(1 / N);
+  const INTRO = [P(-760, 170, 1650), P(30, -40, 0)], FINISH = [mid.clone().add(P(-2900, 3300, 4300)), mid.clone().add(P(0, -250, 0))];
+  const cam = { mx: 0, my: 0, tx: 0, ty: 0 };
+  if (!COARSE) addEventListener("pointermove", (e) => { cam.tx = e.clientX / innerWidth - 0.5; cam.ty = 0.5 - e.clientY / innerHeight; }, { passive: true });
+  const proj = P(0, 0, 0);
+  const screenOf = (v) => { proj.copy(v).project(camera); return { x: (proj.x + 1) / 2, y: (1 - proj.y) / 2 }; };
+
+  function placeCamera(p, f) {
+    // intro: the hero shot; flight: chase cam on the race line; finish: pull up over the whole course
+    const k1 = ss(0.015, 0.12, p), k2 = ss(B + 0.005, 0.97, p);
+    const lag = 720 / L, lead = 650 / L;
+    along(u - lag, tmpA).add(P(0, 110, 0));
+    along(u + lead, tmpB);
+    camPos.copy(INTRO[0]).lerp(tmpA, k1).lerp(FINISH[0], k2);
+    camTgt.copy(INTRO[1]).lerp(tmpB, k1).lerp(FINISH[1], k2);
+    const zoom = 1 + Math.max(0, 0.9 / camera.aspect - 1) * (1 - k1);
+    camPos.sub(camTgt).multiplyScalar(zoom).add(camTgt);
     cam.mx += (cam.tx - cam.mx) * 0.05; cam.my += (cam.ty - cam.my) * 0.05;
-    const zoom = 1 + Math.max(0, 0.9 / camera.aspect - 1) * (1 - k * (i > 0 ? 1 : 0)) * (1 - p);
-    camera.position.copy(cam.pos).sub(cam.tgt).multiplyScalar(zoom).add(cam.tgt).add(P(cam.mx * 90 * (1 - p), cam.my * 50 * (1 - p), 0));
-    camera.lookAt(cam.tgt);
-    // composition: ring to the right of the headline on wide screens, above it on tall ones; centred as we fly in
-    const w = canvas.clientWidth, h = canvas.clientHeight, off = 1 - ease(Math.min(1, p * 1.8));
+    camera.position.copy(camPos).add(P(cam.mx * 90 * (1 - k1), cam.my * 50 * (1 - k1), 0));
+    camera.lookAt(camTgt);
+    const w = canvas.clientWidth, h = canvas.clientHeight, off = 1 - k1;
     if (w && h) camera.setViewOffset(w, h, camera.aspect > 1.15 ? -w * 0.2 * off : 0, camera.aspect > 1.15 ? 0 : h * 0.16 * off, w, h);
   }
-  if (!COARSE) addEventListener("pointermove", (e) => { cam.tx = e.clientX / innerWidth - 0.5; cam.ty = 0.5 - e.clientY / innerHeight; }, { passive: true });
 
-  let lastU = 0, tms = 0, colorT = 0;
-  function frame(dt) {
+  function step(dt, still) {
+    const p = progress();
+    const want = scrollToU(p);
+    const prev = u;
+    u = still ? want : u + (want - u) * (1 - Math.exp(-dt * 7));
+    const speed = Math.abs(u - prev) * L / Math.max(dt, 0.001);
+    // gates passed, and a NEXT click for every gate the drone flies through going forward
+    let n = 0;
+    gateU.forEach((gu) => { if (u >= gu) n++; });
+    if (n > passed && !still) for (let k = passed; k < n; k++) { flash[k] = 1; if (onRace) onRace({ type: "click", gate: k + 1, at: screenOf(GP[k].clone().add(P(0, 230, 0))) }); }
+    passed = n;
+    race.target = passed >= N ? 254 : passed + 1;
     tms += dt * 1000;
-    speedT += dt * 1000 * Math.pow(2, (show.speed - 128) / 42);
-    const u = flight.advance(dt);
-    if (crossed(lastU, u, uGate)) {
-      if (show.mode) { race.target = 2; setTimeout(() => setLook(look + 1), 650); } else setLook(look + 1);
-      flash = 1;
-    }
-    lastU = u;
-    flight.pose(drone.group, u);
-    drone.spin(tms);
-    const env = { show, race, t: tms, dt: dt * 1000, N: 4, speedT };
-    ring.setColors(Sim.frame(r, env));
-    BACK.forEach((b) => b.o.setColors(Sim.frame(b.r, env)));
-    flash *= Math.pow(0.02, dt);
-    ring.body.material.uniforms.uFlash.value = flash * 0.5;
-    fl.uniforms.uCol.value.copy(ring.avg);
-    pl.color.copy(ring.avg); pl.intensity = 2.5e5 * (ring.avg.r + ring.avg.g + ring.avg.b + 0.1);
-    pl.position.set(0, 0, 0);
-    placeCamera(progress());
+    const env = { show, race, t: tms, dt: dt * 1000, N, speedT: tms };
+    const f = pose(u, still ? 0 : speed, tms / 1000);
+    let r = 0, g = 0, b = 0;
+    gates.forEach((G, i) => {
+      G.o.setColors(Sim.frame(G.r, env));
+      flash[i] *= Math.pow(0.03, dt);
+      G.o.body.material.uniforms.uFlash.value = flash[i] * 0.6;
+      fm.uniforms.uC.value[i].copy(G.o.avg);
+      if (i === Math.min(passed, N - 1)) { r = G.o.avg.r; g = G.o.avg.g; b = G.o.avg.b; }
+    });
+    // the next gate lights the drone as it comes in
+    const ng = GP[Math.min(passed, N - 1)];
+    pl.position.set(ng.x, ng.y, ng.z); pl.color.setRGB(r, g, b); pl.intensity = 3e5 * (r + g + b + 0.1);
+    placeCamera(p, f);
     renderer.render(scene, camera);
+    if (onRace) onRace({ type: "state", p, u, passed, n: N, target: race.target, time: u * 14.2 });
     colorT += dt;
-    if (onColor && colorT > 0.12) { colorT = 0; onColor(ring.avg); }
+    if (onColor && (colorT > 0.12 || still)) { colorT = 0; onColor(gates[Math.min(passed, N - 1)].o.avg); }
   }
-  function still() {               // reduced motion: one calm frame
-    setLook(1);
-    flight.pose(drone.group, uGate - 0.05);
-    const env = { show, race, t: 4000, dt: 16, N: 4, speedT: 4000 };
-    ring.setColors(Sim.frame(r, env));
-    BACK.forEach((b) => b.o.setColors(Sim.frame(b.r, env)));
-    fl.uniforms.uCol.value.copy(ring.avg);
-    placeCamera(0);
-    renderer.render(scene, camera);
-    if (onColor) onColor(ring.avg);
-  }
-  const doFit = () => { fit(renderer, camera, canvas, [ring]); if (!moving()) still(); };
+  const frame = (dt) => step(dt, false);
+  const still = () => { tms = 2600; step(0.016, true); };
+  const doFit = () => { fit(renderer, camera, canvas, gates.map((x) => x.o)); if (!moving()) still(); };
   new ResizeObserver(doFit).observe(canvas);
   doFit();
+  // paused: still follow the scroll, one frame at a time
+  let pend = false;
+  addEventListener("scroll", () => { if (moving() || pend) return; pend = true; requestAnimationFrame(() => { pend = false; still(); }); }, { passive: true });
   loop(canvas, frame, still);
   return { renderer };
 }
