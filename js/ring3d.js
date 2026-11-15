@@ -95,19 +95,22 @@ function makeRing(pack, opts = {}) {
   const obj = { group, n: 0, tex: null, mats: [], avg: new THREE.Color(0.2, 0.5, 1) };
   const body = new THREE.Mesh(pack.parts.body, glassMat(null, R));
   body.renderOrder = 2;
-  const inner = ["strip", "cell", "chg", "esp", "res", "toggle", "nut"];
-  for (const k of inner) if (pack.parts[k]) group.add(new THREE.Mesh(pack.parts[k], k === "nut" || k === "toggle" ? metalMat() : darkMat()));
+  // every other part in the pack (electronics, sensor, shroud, cap...) sits inside the clear TPU
+  for (const k of Object.keys(pack.parts)) {
+    if (k === "body" || k === "hoop") continue;
+    group.add(new THREE.Mesh(pack.parts[k], /nut|toggle/.test(k) ? metalMat() : darkMat()));
+  }
   if (pack.parts.hoop && opts.hoop !== false) group.add(new THREE.Mesh(pack.parts.hoop, metalMat()));
   group.add(body);
   const core = ptsMat(10, 1.0, 9), halo = ptsMat(opts.halo || 95, opts.haloI || 0.06, 7);
   const pg = new THREE.BufferGeometry();
   const P1 = new THREE.Points(pg, core), P2 = new THREE.Points(pg, halo);
   P1.renderOrder = P2.renderOrder = 3;
-  group.add(P1, P2);
+  if (opts.leds !== false) group.add(P1, P2);        // the Dumb version has no LEDs: glass only
   obj.mats = [core, halo];
   obj.body = body;
   let refl = null;
-  if (opts.reflect) {                                 // glossy-floor reflection of the LEDs
+  if (opts.reflect && opts.leds !== false) {          // glossy-floor reflection of the LEDs
     const rm = ptsMat(opts.halo || 95, 0.03, 6);
     refl = new THREE.Points(pg, rm);
     refl.scale.y = -1; refl.position.y = -2 * BASE_BOTTOM;
@@ -532,4 +535,68 @@ export async function initCourse(canvas, { packUrl, fleet, autoNext }) {
   fleet.onChange(() => { if (!moving()) still(); });
   loop(canvas, frame, still);
   return { renderer };
+}
+
+// ================================================================ VERSIONS: one turntable, Standard / Sense / Dumb
+export async function initVersions(canvas, { packs, initial = "standard" }) {
+  const Sim = window.RingSim;
+  const renderer = makeRenderer(canvas), scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(30, 1, 5, 20000);
+  lights(scene);
+  const fl = floor(scene, -BASE_BOTTOM, 8000, 420);
+  const holder = new THREE.Group(); scene.add(holder);
+  const objs = {}, sims = {};
+  // LEDs per version: Standard runs a real effect, Sense sits in race mode, Dumb has none (clear TPU in room light)
+  const show = { power: 1, effect: 11, bri: 255, speed: 128, intensity: 120, c: [Sim.hex("ff00c8"), Sim.hex("00e5ff"), [0, 0, 0]], mode: 0, numbers: 0,
+    rc: [Sim.hex("0028ff"), Sim.hex("00ff40"), Sim.hex("ffffff")] };
+  const race = { target: 1, go: 1 };
+  const marker = new THREE.Points(new THREE.BufferGeometry().setAttribute("position", new THREE.BufferAttribute(new Float32Array([0, -168, 4]), 3))
+    .setAttribute("color", new THREE.BufferAttribute(new Float32Array([1, 1, 1]), 3)), ptsMat(70, 0.9, 8));
+  let cur = null, curName = null, name = initial, tms = 0;
+  async function get(v) {
+    if (objs[v]) return objs[v];
+    const pack = await loadPackFresh(packs[v]);
+    const o = makeRing(pack, { reflect: true, halo: 100, leds: v !== "dumb" });
+    o.setCount(71);
+    if (v === "sense") o.group.add(marker);
+    sims[v] = Sim.makeRing({ leds: 71, order: 1 });
+    objs[v] = o;
+    o.setPx(pxNow);
+    return o;
+  }
+  async function select(v) {
+    name = v;
+    const o = await get(v);
+    if (name !== v) return;
+    if (cur) holder.remove(cur.group);
+    cur = o; curName = v; holder.add(o.group);
+    if (!moving()) still();
+  }
+  let pxNow = 800;
+  function paint(t) {
+    if (!cur) return;
+    if (curName === "dumb") { const d = new Uint8Array(71 * 3).fill(46); cur.setColors(d); }
+    else {
+      show.mode = curName === "sense" ? 1 : 0;
+      cur.setColors(Sim.frame(sims[curName], { show, race, t, dt: 16, N: 1, speedT: t }));
+    }
+    if (curName === "sense") marker.material.uniforms.uI.value = 0.5 + 0.5 * Math.sin(t / 260);
+    fl.uniforms.uCol.value.copy(cur.avg);
+    holder.rotation.y = Math.sin(t / 2600) * 0.55;
+    camera.position.set(0, 100, 1180); camera.lookAt(0, -30, 0);
+    renderer.render(scene, camera);
+  }
+  const frame = (dt) => { tms += dt * 1000; paint(tms); };
+  const still = () => paint(tms || 3000);
+  const doFit = () => { fit(renderer, camera, canvas, Object.values(objs)); pxNow = (renderer.getDrawingBufferSize(new THREE.Vector2()).y / 2) * camera.projectionMatrix.elements[5]; marker.material.uniforms.uPx.value = pxNow; if (!moving()) still(); };
+  new ResizeObserver(doFit).observe(canvas);
+  doFit();
+  await select(initial);
+  loop(canvas, frame, still);
+  return { select };
+}
+// the hero/course share one cached pack; versions each need their own
+const packCache = {};
+function loadPackFresh(url) {
+  packCache[url] ||= fetch(url).then((r) => { if (!r.ok) throw new Error("mesh " + r.status); return r.arrayBuffer(); }).then(parsePack);
+  return packCache[url];
 }

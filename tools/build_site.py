@@ -47,28 +47,26 @@ def decimate(v, f, target):
     return np.asarray(m.vertices), np.asarray(m.triangles)
 
 
-def build_meshes():
-    src = V2 / "renders16"
-    parts = ["body", "strip", "hoop", "cell", "chg", "esp", "res", "toggle", "nut"]
+def strip_frame():
+    """Centre + radius of the standard ring's LED strip circle: every version is placed in this frame."""
+    sv, _ = load_stl(V2 / "renders16" / "r17_16in_strip.stl")
+    c = [(sv[:, k].max() + sv[:, k].min()) / 2 for k in range(3)]
+    return c, (sv[:, 0].max() - sv[:, 0].min()) / 2
+
+
+def pack(files, out_name, frame):
+    """files: [(part name, stl path)] -> assets/<out_name> mesh pack (body decimated; front face toward +z)."""
+    (cx, cy, cz), radius = frame
     out = []
-    # centre on the LED strip circle so the ring sits at the origin, front face toward +z
-    sv, _ = load_stl(src / "r17_16in_strip.stl")
-    cx = (sv[:, 0].max() + sv[:, 0].min()) / 2
-    cy = (sv[:, 1].max() + sv[:, 1].min()) / 2
-    cz = (sv[:, 2].max() + sv[:, 2].min()) / 2
-    radius = (sv[:, 0].max() - sv[:, 0].min()) / 2
-    for name in parts:
-        p = src / f"r17_16in_{name}.stl"
-        if not p.exists():
-            continue
-        v, f = load_stl(p)
+    for name, path in files:
+        v, f = load_stl(path)
         if name == "body":
             v, f = decimate(v, f, BODY_TRIS)
         v = v - [cx, cy, cz]
         q = np.round(v * 100).astype(np.int16)          # 0.01 mm steps, +-327 mm range
         idx = f.astype(np.uint16 if len(v) < 65536 else np.uint32)
-        out.append((name, q, idx))
-        log(f"  mesh {name:7s} {len(v):6d} verts {len(f):6d} tris")
+        out.append((name[:12], q, idx))
+        log(f"  {out_name}: {name:10s} {len(v):6d} verts {len(f):6d} tris")
     buf = bytearray(b"RLM1")
     buf += struct.pack("<If", len(out), radius)
     for name, q, idx in out:
@@ -79,8 +77,28 @@ def build_meshes():
         b = idx.tobytes()
         buf += b + b"\0" * (-len(b) % 4)
     (SITE / "assets").mkdir(exist_ok=True)
-    (SITE / "assets" / "ring16.bin").write_bytes(buf)
-    log(f"  assets/ring16.bin {len(buf) / 1024:.0f} KB, strip radius {radius:.1f} mm")
+    (SITE / "assets" / out_name).write_bytes(buf)
+    log(f"  assets/{out_name} {len(buf) / 1024:.0f} KB")
+
+
+def build_meshes():
+    src = V2 / "renders16"
+    parts = ["body", "strip", "hoop", "cell", "chg", "esp", "res", "toggle", "nut"]
+    pack([(n, src / f"r17_16in_{n}.stl") for n in parts if (src / f"r17_16in_{n}.stl").exists()], "ring16.bin", strip_frame())
+
+
+def build_variants():
+    """Sense / Dumb versions exported by tools/export_variants.py (needs CadQuery) -> assets/ring16-<variant>.bin"""
+    src = SITE / "tools" / "_variants"
+    frame = strip_frame()
+    for variant in ("sense", "dumb"):
+        files = sorted(src.glob(f"{variant}_*.stl"))
+        if not files:
+            log(f"  {variant}: no export in tools/_variants (run export_variants.py first)")
+            continue
+        named = [(f.stem[len(variant) + 1:], f) for f in files]
+        named.sort(key=lambda t: t[0] != "body")
+        pack(named, f"ring16-{variant}.bin", frame)
 
 
 # ------------------------------------------------------------------ images
@@ -148,16 +166,22 @@ def build_demo():
     (SITE / "demo").mkdir(exist_ok=True)
     (SITE / "demo" / "app.html").write_text(html, encoding="utf-8")
     main = (V2 / "firmware" / "ringlink" / "src" / "main.cpp").read_text(encoding="utf-8")
-    mj, mn = (re.search(rf"#define\s+FW_{k}\s+(\d+)", main) for k in ("MAJOR", "MINOR"))
-    ver = f"{mj.group(1)}.{mn.group(1)}" if mj and mn else "?"
+    # the version people can actually flash: the web flasher's manifest, not main.cpp (which may be mid-edit)
+    try:
+        ver = json.load(open(V2 / "firmware" / "site" / "manifest.json"))["version"]
+    except Exception:
+        mj, mn = (re.search(rf"#define\s+FW_{k}\s+(\d+)", main) for k in ("MAJOR", "MINOR"))
+        ver = f"{mj.group(1)}.{mn.group(1)}" if mj and mn else "?"
     (SITE / "js" / "fw.js").write_text(f'// generated\nwindow.RL_FW = "{ver}";\n', encoding="utf-8")
     log(f"  demo/app.html ({len(html) / 1024:.0f} KB), firmware v{ver}")
 
 
 if __name__ == "__main__":
-    steps = sys.argv[1:] or ["meshes", "images", "demo"]   # STLs + parts list live on MakerWorld now
+    steps = sys.argv[1:] or ["meshes", "variants", "images", "demo"]   # STLs + parts list live on MakerWorld now
     if "meshes" in steps:
         build_meshes()
+    if "variants" in steps:
+        build_variants()
     if "images" in steps:
         build_images()
     if "stls" in steps:

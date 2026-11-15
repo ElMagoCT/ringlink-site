@@ -25,7 +25,7 @@ const nav = $("#nav");
 const onScroll = () => nav.classList.toggle("solid", scrollY > 40);
 addEventListener("scroll", onScroll, { passive: true });
 onScroll();
-const secs = ["features", "app", "build", "faq"].map((id) => document.getElementById(id));
+const secs = ["features", "app", "versions", "build", "faq"].map((id) => document.getElementById(id));
 const navIO = new IntersectionObserver((es) => es.forEach((e) => {
   if (e.isIntersecting) $$(".nav nav a").forEach((a) => a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id));
 }), { rootMargin: "-45% 0px -50% 0px" });
@@ -72,7 +72,7 @@ let webgl = true;
 try { const c = document.createElement("canvas"); webgl = !!(c.getContext("webgl2") || c.getContext("webgl")); } catch (e) { webgl = false; }
 if (!webgl) root.classList.add("no-webgl");
 else {
-  import("./ring3d.js").then(({ initHero, initCourse }) => {
+  import("./ring3d.js").then(({ initHero, initCourse, initVersions }) => {
     initHero($("#hero-canvas"), { packUrl: PACK, onColor: setAccent, progress: heroProgress, onRace: raceHud }).catch(fail);
     const cc = $("#course-canvas");
     // build the course when it first gets near the screen
@@ -82,6 +82,15 @@ else {
       initCourse(cc, { packUrl: PACK, fleet, autoNext: () => $("#auto-next").checked }).catch(fail);
     }, { rootMargin: "600px" });
     io.observe(cc);
+    // versions turntable: built when it gets near the screen, switched by the three cards
+    const vc = $("#ver-canvas");
+    const vio = new IntersectionObserver((es) => {
+      if (!es[0].isIntersecting) return;
+      vio.disconnect();
+      initVersions(vc, { packs: { standard: PACK, sense: "assets/ring16-sense.bin", dumb: "assets/ring16-dumb.bin" } })
+        .then((v) => { versions = v; }).catch(fail);
+    }, { rootMargin: "500px" });
+    vio.observe(vc);
   }).catch(fail);
 }
 // ---------------------------------------------------------------- hero race HUD: the app's race screen, clicking NEXT at each gate
@@ -114,6 +123,15 @@ function raceHud(e) {
   hudNext.querySelector("b").textContent = fin ? "" : e.target < e.n ? e.target + 1 : "FINISH";
   hudGates.forEach((g, i) => { g.className = fin || i < e.passed ? "done" : i === e.passed ? "next" : ""; });
 }
+// ---------------------------------------------------------------- versions cards
+let versions = null;
+function pickVersion(b) {
+  $$(".v-list button").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+  $("#v-spec").textContent = b.dataset.spec;
+  if (versions) versions.select(b.dataset.v);
+}
+$$(".v-list button").forEach((b) => (b.onclick = () => pickVersion(b)));
+$("#v-spec").textContent = $(".v-list button").dataset.spec;
 function fail(e) { console.warn("3D view unavailable:", e); root.classList.add("no-webgl"); }
 
 // ---------------------------------------------------------------- effects card: a strip running the real effects

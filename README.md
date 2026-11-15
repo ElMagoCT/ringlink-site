@@ -7,6 +7,9 @@ Static site for Crystal Gates, open-source FPV LED race gates running the RingLi
   `tools/build_site.py`, which reads `../v2` (never writes there) and regenerates:
   `assets/ring16.bin` (ring mesh for the 3D views), `img/*.webp` (renders), `js/fw.js` (firmware version)
   and `demo/app.html` (the real control page from `page.h`).
+- **Versions viewer (Standard / Sense / Dumb):** after CAD changes to a version, export its assembled ring with a
+  CadQuery Python (`C:\Users\micah\brophy-tshirt-cannon\cad\.venv\Scripts\python.exe tools\export_variants.py`),
+  then `Rebuild website.bat` packs it into `assets/ring16-<version>.bin`.
 - **Files, parts list and build guide live on MakerWorld**, not here. The write-up to paste there is in
   `../makerworld/` (description + wiring image; `parts.js` holds the checked prices it came from).
 - **MakerWorld link:** the "Files, parts & guide on MakerWorld" button (`#mw-link` in `index.html`) and the footer
