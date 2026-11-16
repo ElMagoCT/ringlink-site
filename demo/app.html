@@ -81,7 +81,7 @@ input[type=color]{width:100%;height:46px;border:1px solid var(--line);border-rad
 <header>
  <div class="top"><div style="flex:1"><h1>LED Rings</h1><div class="sub" id="sum">connecting...</div></div>
  <button class="pwr" id="pwr" title="All rings on/off">&#x23FB;</button></div>
- <nav><button data-t="show" class="on">Show</button><button data-t="race">Race</button><button data-t="rings">Rings</button></nav>
+ <nav><button data-t="show" class="on">Show</button><button data-t="race">Race</button><button data-t="rings">Rings</button><button data-t="sensor">Sensor</button></nav>
 </header>
 <main>
 <section id="show" class="on">
@@ -105,6 +105,9 @@ input[type=color]{width:100%;height:46px;border:1px solid var(--line);border-rad
   <div class="row" style="margin-top:12px"><label>Laps</label><button class="btn" id="lapm">&minus;</button><span class="big" id="laps" style="width:46px;text-align:center">1</span><button class="btn" id="lapp">+</button><span style="flex:1"></span><button class="btn bad" id="rexit">Exit race</button></div>
  </div>
  <div class="card"><h2>Race colours</h2><div class="colors"><div><input type="color" id="rc0">Waiting</div><div><input type="color" id="rc1">Next gate</div><div><input type="color" id="rc2">Passed</div></div></div>
+ <div class="card"><h2>Light sensors</h2>
+  <div class="tog"><div><b>Gates with sensors advance by themselves</b><div class="hint" style="margin:2px 0 0">A drone through the green gate counts as NEXT, timed at the middle of the pass. Passes through other gates are listed, not counted.</div></div><input type="checkbox" id="srace"></div>
+  <div class="splits" id="rplog" style="margin-top:8px"></div></div>
  <div class="card"><h2>Splits</h2><div class="splits" id="splits"><div>Tap NEXT each time the pilot flies through the green gate.</div></div></div>
 </section>
 
@@ -130,6 +133,22 @@ input[type=color]{width:100%;height:46px;border:1px solid var(--line);border-rad
   <div id="fwbar" style="height:8px;background:var(--card2);border-radius:4px;overflow:hidden;display:none"><div style="height:100%;width:0;background:var(--acc)"></div></div>
   <div class="hint" id="fwmsg"></div><div class="splits" id="fwjobs"></div></div>
  <p class="hint">Tip: open <b>http://rings.local</b> (or 192.168.4.1) in your browser and use Share &rarr; <b>Add to Home Screen</b> to get an app icon for this page.</p>
+</section>
+
+<section id="sensor">
+ <div class="card"><h2>Light sensor · this ring</h2>
+  <div class="sub" id="sstat">-</div>
+  <canvas id="scv" style="width:100%;height:220px;display:block;margin:10px 0;background:var(--bg);border-radius:8px"></canvas>
+  <div class="btns"><button class="btn" id="srec">Record</button><button class="btn" id="scsv">Download CSV</button><button class="btn" id="ssim">Simulate passes</button></div>
+  <div class="hint" id="sinfo">The trace is the sensor of the ring you're connected to (the host), 1200 samples a second. Orange lines = detected passes; the band shows the threshold.</div></div>
+ <div class="card"><h2>Detection (all rings)</h2>
+  <div class="row"><label>Threshold</label><input type="range" min="6" max="60" id="sk"><span class="val" id="skv" style="width:60px"></span></div>
+  <div class="row"><label>Hold-off</label><input type="range" min="5" max="250" id="sh"><span class="val" id="shv" style="width:60px"></span></div>
+  <div class="row"><label>Longest</label><input type="range" min="2" max="100" id="sm"><span class="val" id="smv" style="width:60px"></span></div>
+  <div class="row"><label>Range</label><select id="srange" class="field"><option value="0">Auto</option><option value="1">Day (low gain)</option><option value="2">Night (high gain)</option></select></div>
+  <div class="row"><label>Mains</label><select id="smains" class="field"><option value="0">60 Hz (US)</option><option value="1">50 Hz</option></select></div>
+  <div class="hint">Threshold = how far the light must dip or jump, in noise units. Hold-off = dead time after a pass. Longest = anything slower counts as a lighting change, not a drone.</div></div>
+ <div class="card"><h2>Detections on this ring</h2><div class="splits" id="slog"><div>None yet.</div></div></div>
 </section>
 </main>
 <div id="toast"></div>
@@ -199,13 +218,15 @@ function ringCard(r){const d=document.createElement('div');d.className='ring';d.
  <div class="ed"><div class="row"><label>Name</label><input type="text" maxlength="16" class="fname"></div>
  <div class="row"><label>Size</label><select class="fsize">${SIZES.map(s=>`<option value="${s[0]}">${s[0]} in (${s[1]} LEDs)</option>`).join('')}<option value="0">Custom</option></select></div>
  <div class="row"><label>LEDs</label><input type="number" min="1" max="300" class="fleds"><button class="btn fdet">Detect</button></div><div class="hint fsrc"></div><div class="hint fnb"></div>
+ <div class="row"><label>Sensor</label><select class="fsens field"><option value="0">Light sensor: auto-detect</option><option value="1">Light sensor: yes</option><option value="2">Light sensor: no</option></select></div>
  <div class="btns"><button class="btn pri fsave">Save</button><button class="btn fident">Flash it</button></div>
  <div class="hint" style="margin-top:14px">Battery calibration: measure the cell with a meter, type it in, tap Calibrate.</div>
  <div class="row"><label>Meter (V)</label><input type="number" step="0.01" min="2.5" max="4.4" class="fmeter" placeholder="e.g. 3.92"><button class="btn fcal">Calibrate</button></div></div>`;
- d.querySelector('.rinfo').onclick=d.querySelector('.num').onclick=d.querySelector('.batt').onclick=()=>{const open=!d.classList.contains('open');$$('.ring.open').forEach(x=>x.classList.remove('open'));if(open){const r=S.rings.find(x=>x.mac===d.dataset.mac);d.querySelector('.fname').value=r.name;d.querySelector('.fsize').value=SIZES.some(s=>s[0]===r.size)?r.size:0;d.querySelector('.fleds').value=r.leds;d.querySelector('.fsrc').textContent=srcText(r);d.classList.add('open')}};
+ d.querySelector('.rinfo').onclick=d.querySelector('.num').onclick=d.querySelector('.batt').onclick=()=>{const open=!d.classList.contains('open');$$('.ring.open').forEach(x=>x.classList.remove('open'));if(open){const r=S.rings.find(x=>x.mac===d.dataset.mac);d.querySelector('.fname').value=r.name;d.querySelector('.fsize').value=SIZES.some(s=>s[0]===r.size)?r.size:0;d.querySelector('.fleds').value=r.leds;d.querySelector('.fsens').value=((r.sens||0)>>4)&3;d.querySelector('.fsrc').textContent=srcText(r);d.classList.add('open')}};
  d.querySelector('.fdet').onclick=()=>{post('/api/ring',{mac:d.dataset.mac,detect:1});d.classList.remove('open');toast('Ring restarts and measures its strip - battery switch must be on')};
  d.querySelector('.fsize').onchange=e=>{const s=SIZES.find(s=>s[0]==e.target.value);if(s)d.querySelector('.fleds').value=s[1]};
- d.querySelector('.fsave').onclick=()=>{post('/api/ring',{mac:d.dataset.mac,name:d.querySelector('.fname').value,leds:d.querySelector('.fleds').value,size:d.querySelector('.fsize').value});d.classList.remove('open');toast('Saved')};
+ d.querySelector('.fsave').onclick=()=>{const r0=S.rings.find(x=>x.mac===d.dataset.mac),sm=+d.querySelector('.fsens').value,q={mac:d.dataset.mac,name:d.querySelector('.fname').value,leds:d.querySelector('.fleds').value,size:d.querySelector('.fsize').value};
+ if(r0&&sm!==(((r0.sens||0)>>4)&3))q.smode=sm;post('/api/ring',q);d.classList.remove('open');toast(q.smode!==undefined?'Saved - the ring restarts to apply the sensor setting':'Saved')};
  d.querySelector('.fident').onclick=()=>post('/api/identify',{mac:d.dataset.mac});
  d.querySelector('.fcal').onclick=()=>{const r=S.rings.find(x=>x.mac===d.dataset.mac),m=parseFloat(d.querySelector('.fmeter').value);if(!(m>2.5)){toast('Type the meter reading first');return}if(r.batt<0&&r.mv<2500){toast('Ring sees no battery - switch it on');return}const cal=Math.round(m*1000-(r.mv-r.calib));post('/api/ring',{mac:r.mac,calib:cal});toast('Calibrated ('+(cal>=0?'+':'')+(cal/1000).toFixed(2)+' V)')};
  return d}
@@ -236,6 +257,8 @@ function apply(s){if(!s||!s.show)return;S=s;fetchedAt=performance.now();const sh
  // rings
  fwApply(s);
  if(document.activeElement!==$('#txq')&&sh.tx)$('#txq').value=sh.tx;
+ if(sh.sk!==undefined){['sk','sh','sm'].forEach(k=>{if(!busy(k))$('#'+k).value=sh[k]});sensLabels();if(document.activeElement!==$('#srange'))$('#srange').value=(sh.sf>>1)&3;if(document.activeElement!==$('#smains'))$('#smains').value=sh.sf&1;$('#srace').checked=!!(sh.sf&8)}
+ $('#rplog').innerHTML=passRows();
  if(!busy('batt')){$('#warnv').value=(sh.warn/1000).toFixed(2);$('#cutv').value=(sh.cut/1000).toFixed(2);battHints()}
  $('#pinstate').textContent=s.pin?'PIN is on. Each phone enters it once (remembered for 30 days).':'No PIN - anyone on the LED-Rings Wi-Fi can control the rings.';
  if(!dragging&&Date.now()>orderHold){const want=s.rings.slice().sort((a,b)=>(a.order||99)-(b.order||99)||a.name.localeCompare(b.name));
@@ -246,7 +269,7 @@ function apply(s){if(!s||!s.show)return;S=s;fetchedAt=performance.now();const sh
   d.querySelector('.rname').textContent=(r.leader?'★ ':'')+r.name+(r.me?' (this one)':'');
   d.querySelector('.rmeta').textContent=(r.size?r.size+' in · ':'')+r.leds+' LEDs'+(r.lsrc==1?' (auto)':r.lsrc==0?' (not set)':'')+(r.fw?' · v'+r.fw:'')+(r.online?'':' · off');
   const src=d.querySelector('.fsrc');if(d.classList.contains('open')){src.textContent=srcText(r)+probeText(r);d.querySelector('.fnb').textContent=nbText(r)}
-  const [st,col]=sig(r),se=d.querySelector('.rsig');se.textContent=st;se.style.color=col;
+  let [st,col]=sig(r);const se=d.querySelector('.rsig');if(r.online&&(r.sens&1))st+=(st?' · ':'')+'sensor'+(r.sens&8?' (simulated)':'')+(r.sens&4?' (saturated)':'')+' · '+(r.np||0)+' passes';se.textContent=st;se.style.color=col;
   d.querySelector('.batt').innerHTML=batt(r)})}
 function fwApply(s){const O=s.ota||{},vers=[...new Set(s.rings.filter(r=>r.online&&r.fw).map(r=>'v'+r.fw))];
  $('#fwinfo').textContent='Running '+(vers.join(', ')||'?')+'. To update every ring that is on, pick RingLink_x.x_update.bin from the firmware folder.';
@@ -259,5 +282,45 @@ $('#fwgo').onclick=()=>{const f=$('#fwfile').files[0];if(!f){toast('Pick RingLin
  x.onload=()=>{if(x.status==401){lock();return}let r={};try{r=JSON.parse(x.responseText)}catch(e){}toast(x.status==200?'Uploaded v'+r.ver+' - updating '+r.rings+' ring(s)':(r.msg||'Upload failed'));poll()};
  x.onerror=()=>toast('Upload failed');x.send(fd)};
 function tick(){if(S&&S.show.mode){const R=S.race;let el=R.elapsed;if(R.target>0&&R.target!==254)el+=performance.now()-fetchedAt;if(R.elapsed<0&&R.target===0)el=0;$('#rtime').textContent=fmt(el)}requestAnimationFrame(tick)}
+// ---- light sensor
+const PRES=['counted','wrong gate','not racing','sensors off'];
+function ringBy(mac){return S&&S.rings.find(x=>x.mac===mac)}
+function passRows(){if(!S||!S.passes||!S.passes.length)return'<div>No passes yet.</div>';
+ return S.passes.slice(0,12).map(p=>{const r=ringBy(p[0]);return`<div><span>${r?r.name:p[0].slice(-4)}${r&&r.order?' · gate '+r.order:''} · ${p[2]} ms ${p[3]<0?'dip':'bump'}</span><b style="color:${p[4]==0?'var(--go)':p[4]==1?'var(--warn)':'var(--mut)'}">${PRES[p[4]]} · ${(p[1]/1000).toFixed(0)}s ago</b></div>`}).join('')}
+$('#srace').onchange=e=>post('/api/show',{srace:e.target.checked?1:0});
+[['sk','sk'],['sh','sh'],['sm','sm']].forEach(([id,k])=>{const send=throttle(v=>post('/api/show',{[k]:v}),150);$('#'+id).oninput=e=>{hold[id]=Date.now()+1500;sensLabels();send(e.target.value)}});
+$('#srange').onchange=e=>post('/api/show',{srange:e.target.value});$('#smains').onchange=e=>post('/api/show',{smains:e.target.value});
+function sensLabels(){$('#skv').textContent=($('#sk').value/2).toFixed(1)+' σ';$('#shv').textContent=$('#sh').value*10+' ms';$('#smv').textContent=$('#sm').value*10+' ms'}
+const SC={buf:new Uint16Array(3600),n:0,seq:0,since:null,ev:[],last:null,busy:false,rec:null,recN:0,recFirst:0,recEv:[]};
+function sensPoll(){if(tab!=='sensor'||SC.busy||locked)return;SC.busy=true;
+ fetch('/api/sensor'+(SC.since!=null?'?since='+SC.since:''),{cache:'no-store'}).then(chk).then(j=>{SC.busy=false;sensApply(j)}).catch(()=>{SC.busy=false})}
+function sensApply(j){if(!j||j.seq===undefined)return;SC.last=j;
+ if(SC.since!=null&&j.first!==SC.since){SC.n=0}                 // gap: start the picture again
+ const h=j.h||'',n=h.length/3;
+ for(let i=0;i<n;i++){const v=parseInt(h.substr(i*3,3),16);SC.buf[SC.n%3600]=v;SC.n++;if(SC.rec&&SC.recN<SC.rec.length)SC.rec[SC.recN++]=v}
+ SC.seq=j.seq;SC.since=j.seq;
+ (j.ev||[]).forEach(e=>{if(!SC.ev.some(x=>x[0]===e[0])){SC.ev.push(e);if(SC.rec&&e[0]>=SC.recFirst)SC.recEv.push(e)}});SC.ev=SC.ev.slice(-60);
+ $('#sstat').textContent=(j.sim?'SIMULATED · ':'')+(j.active||j.sim?(j.sim?'':(j.day?'day range':'night range')+' · ')+'level '+j.base+' · noise '+j.noise+' · threshold ±'+j.thr+(j.sat?' · SATURATED (sun or lamp in view)':''):(j.mode==2?'sensor turned off for this ring':'no light sensor found on this ring'))+' · '+j.total+' detections'+(j.sim?' of '+j.dips+' simulated passes':'');
+ $('#ssim').textContent=j.sim?'Stop simulation':'Simulate passes';
+ $('#slog').innerHTML=SC.ev.length?SC.ev.slice().reverse().slice(0,12).map(e=>`<div><span>${e[1]} ms ${e[2]<0?'dip':'bump'} (${Math.abs(e[2])})</span><b>${((SC.seq-e[0])/j.rate).toFixed(1)} s ago</b></div>`).join(''):'<div>None yet.</div>';
+ if(SC.rec)$('#srec').textContent='Stop ('+(SC.recN/j.rate).toFixed(0)+' s)';
+ sensDraw()}
+function sensDraw(){const c=$('#scv'),W=c.clientWidth*devicePixelRatio,H=c.clientHeight*devicePixelRatio;if(!W)return;c.width=W;c.height=H;const g=c.getContext('2d'),j=SC.last;
+ const cnt=Math.min(SC.n,3600);if(!cnt)return;const startSeq=SC.seq-cnt;let lo=1e9,hi=-1e9;
+ for(let i=0;i<cnt;i++){const v=SC.buf[(SC.n-cnt+i)%3600];if(v<lo)lo=v;if(v>hi)hi=v}
+ if(j){lo=Math.min(lo,j.base-j.thr*1.5);hi=Math.max(hi,j.base+j.thr*1.5)}const pad=(hi-lo)*0.08+2;lo-=pad;hi+=pad;
+ const X=i=>i/(3600-1)*W,Y=v=>H-(v-lo)/(hi-lo)*H;
+ if(j&&(j.active||j.sim)){g.fillStyle='rgba(61,139,255,.12)';g.fillRect(0,Y(j.base+j.thr),W,Y(j.base-j.thr)-Y(j.base+j.thr));g.strokeStyle='rgba(61,139,255,.6)';g.setLineDash([6,6]);g.beginPath();g.moveTo(0,Y(j.base));g.lineTo(W,Y(j.base));g.stroke();g.setLineDash([])}
+ g.strokeStyle='#ffb020';g.lineWidth=2*devicePixelRatio;SC.ev.forEach(e=>{const i=e[0]-startSeq+(3600-cnt);if(i>=0&&i<3600){g.beginPath();g.moveTo(X(i),0);g.lineTo(X(i),H);g.stroke()}});
+ g.strokeStyle='#e8edf6';g.lineWidth=1*devicePixelRatio;g.beginPath();for(let i=0;i<cnt;i++){const x=X(3600-cnt+i),y=Y(SC.buf[(SC.n-cnt+i)%3600]);i?g.lineTo(x,y):g.moveTo(x,y)}g.stroke();
+ g.fillStyle='#8b97ab';g.font=(11*devicePixelRatio)+'px system-ui';g.fillText(Math.round(hi),4,12*devicePixelRatio);g.fillText(Math.round(lo),4,H-4);g.fillText('3 s',W-24*devicePixelRatio,H-4)}
+$('#ssim').onclick=()=>fetch('/api/sensor',{method:'POST',body:new URLSearchParams({sim:SC.last&&SC.last.sim?0:1})}).then(chk).then(j=>{SC.since=null;sensApply(j)}).catch(()=>{});
+$('#srec').onclick=()=>{if(SC.rec){const n=SC.recN;SC.recDone={data:SC.rec.slice(0,n),first:SC.recFirst,ev:SC.recEv.slice(),rate:SC.last?SC.last.rate:1200};SC.rec=null;$('#srec').textContent='Record';toast('Recorded '+(n/SC.recDone.rate).toFixed(1)+' s - tap Download CSV')}
+ else{SC.rec=new Uint16Array(1200*600);SC.recN=0;SC.recFirst=SC.seq;SC.recEv=[];$('#srec').textContent='Stop (0 s)'}};
+$('#scsv').onclick=()=>{const r=SC.recDone||(SC.rec?{data:SC.rec.slice(0,SC.recN),first:SC.recFirst,ev:SC.recEv,rate:1200}:null);if(!r||!r.data.length){toast('Tap Record first');return}
+ const ev=new Map(r.ev.map(e=>[e[0],e]));const j=SC.last||{};let csv='# RingLink light sensor log, '+new Date().toISOString()+', '+r.rate+' samples/s, threshold '+(S?S.show.sk/2:'?')+' sigma, hold-off '+(S?S.show.sh*10:'?')+' ms, longest '+(S?S.show.sm*10:'?')+' ms, '+(j.sim?'simulated':(j.day?'day':'night')+' range')+'\nsample,time_ms,raw,pass_ms,pass_amp\n';
+ for(let i=0;i<r.data.length;i++){const q=r.first+i,e=ev.get(q);csv+=q+','+(i*1000/r.rate).toFixed(2)+','+r.data[i]+(e?','+e[1]+','+e[2]:',,')+'\n'}
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='ringlink-sensor-'+Date.now()+'.csv';document.body.appendChild(a);a.click();a.remove()};
+setInterval(sensPoll,250);
 poll();setInterval(poll,800);tick();
 </script></body></html>

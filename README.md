@@ -17,6 +17,17 @@ Static site for Crystal Gates, open-source FPV LED race gates running the RingLi
 - **MakerWorld link:** the "Files, parts & guide on MakerWorld" button (`#mw-link` in `index.html`) and the footer
   link point at a MakerWorld search until the model page exists.
 
+## Pages
+
+| Page | Source |
+|---|---|
+| `/` | `index.html` (race hero, features, app demo, versions, build CTA, FAQ) |
+| `/build/` | `build/index.html` + `js/build.js` + `js/sizes.js` (generated): what you need, print, wiring diagram, assembly |
+| `/flash/` | generated from `v2/firmware/site/index.html`. It installs from the published manifest at `https://elmagoct.github.io/ringlink/manifest.json`, so new firmware shows up here without a website rebuild |
+| `/connect/` | generated from `v2/firmware/site/control.html` + `link.js` (control over USB / Bluetooth) |
+
+`Rebuild website.bat` refreshes `/flash/` and `/connect/` from the firmware folder (the `pages` step), so run it after the flasher or control page changes.
+
 ## Files
 
 | | |

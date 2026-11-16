@@ -25,7 +25,7 @@ const nav = $("#nav");
 const onScroll = () => nav.classList.toggle("solid", scrollY > 40);
 addEventListener("scroll", onScroll, { passive: true });
 onScroll();
-const secs = ["features", "app", "versions", "build", "faq"].map((id) => document.getElementById(id));
+const secs = ["features", "app", "versions"].map((id) => document.getElementById(id));
 const navIO = new IntersectionObserver((es) => es.forEach((e) => {
   if (e.isIntersecting) $$(".nav nav a").forEach((a) => a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id));
 }), { rootMargin: "-45% 0px -50% 0px" });
