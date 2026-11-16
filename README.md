@@ -1,5 +1,7 @@
 # Crystal Gates website
 
+Live at https://crystal-gates.micahtucker.com (GitHub Pages, custom domain via the `CNAME` file and a GoDaddy CNAME record → elmagoct.github.io).
+
 Static site for Crystal Gates, open-source FPV LED race gates running the RingLink firmware. No build step: the folder is the site, ready for GitHub Pages.
 
 - **Preview:** double-click `Preview website.bat` (serves http://127.0.0.1:5191).
